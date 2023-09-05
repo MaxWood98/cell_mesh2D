@@ -1,0 +1,5 @@
+io/
+.vscode/
+obj/
+test/
+*.exe
