@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 4.2
-!Updated 05-09-2023
+!Version 5.0
+!Updated 06-09-2023
 
 !Module
 module cellmesh2d_postprocess_mod
@@ -1623,12 +1623,15 @@ type(vol_mesh_data) :: volume_mesh
 
 !Variables - Local 
 integer(in) :: ee,vv,cc,ff,aa
-integer(in) :: nedgeN,nvtxN,v1,v2,ebase,etgt,nupdate,eadj
-integer(in) :: edge_map(volume_mesh%nedge),vtx_map(volume_mesh%nvtx),v2e_vsurf(volume_mesh%nvtx,2)
-integer(in) :: edge_merge_idx(volume_mesh%nedge),cell_nsedge(volume_mesh%ncell)
-integer(in) :: edgeN(volume_mesh%nedge,4)
+integer(in) :: nedgeN,nvtxN,v1,v2,ebase,etgt,nupdate,eadj,emtgt,vstart,vend,nvem,vtgt,vadj,vp,vc,eposfound
+integer(in) :: edge_map(volume_mesh%nedge),vtx_map(volume_mesh%nvtx)
+integer(in) :: edge_merge_idx(volume_mesh%nedge),cell_nsedge(volume_mesh%ncell),medge_evtxs(volume_mesh%nvtx)
+integer(in) :: edgeN(volume_mesh%nedge,4),v2e_vsurf(volume_mesh%nvtx,2)
 integer(in), dimension(:), allocatable ::  vtx_surfsegN
 integer(in), dimension(:,:), allocatable :: cell_surfedges
+real(dp) :: distc,distp,ef,emx,emy
+real(dp) :: medge_evtxs_dfrac(volume_mesh%nvtx)
+real(dp) :: edgemidpN(volume_mesh%nedge,2)
 real(dp), dimension(:,:), allocatable :: verticesN
 
 !Index retained non surface edges 
@@ -1815,11 +1818,121 @@ do cc=1,volume_mesh%ncell
     end if
 end do 
 
-!Store new mesh edges
+!Find the on surface midpoint of each simplified edge 
+medge_evtxs(:) = 0 
+medge_evtxs_dfrac(:) = 0.0d0 
+edgemidpN(:,:) = 0.0d0 
+do cc=1,volume_mesh%ncell
+    if (cell_nsedge(cc) .GT. 0) then
+        do aa=1,2*cell_nsedge(cc)
+            
+            !Find merged edge 
+            emtgt = 0 
+            do ee=1,cell_nsedge(cc)
+                etgt = cell_surfedges(cc,ee)
+                if (edge_merge_idx(etgt) .NE. 0) then 
+                    emtgt = edge_merge_idx(etgt)
+                end if 
+            end do 
+
+            !Exit with no merged edge 
+            if (emtgt == 0) then 
+                exit 
+            end if 
+
+            !Order existing vertices along this edge 
+            vstart = edgeN(emtgt,1)
+            vend = edgeN(emtgt,1)
+            nvem = 1
+            medge_evtxs(1) = vstart
+            vtgt = vstart
+            do ee=1,2*cell_nsedge(cc)
+
+                !Find next edge on the surface 
+                eadj = 0 
+                etgt = v2e_vsurf(vtgt,2)
+                if (etgt .GT. 0) then 
+                    if (edge_merge_idx(etgt) == emtgt) then 
+                        eadj = etgt
+                    end if 
+                end if 
+
+                !Exit at complete search 
+                if (eadj == 0) then 
+                    exit 
+                end if 
+
+                !Find next vertex
+                if (volume_mesh%edge(eadj,1) == vtgt) then 
+                    vadj = volume_mesh%edge(eadj,2)
+                else
+                    vadj = volume_mesh%edge(eadj,1)
+                end if 
+
+                !Store next vertex
+                nvem = nvem + 1
+                medge_evtxs(nvem) = vadj
+
+                !Update base vertex
+                vtgt = vadj
+
+                !Exit if final vertex
+                if (vadj == vend) then 
+                    exit 
+                end if 
+            end do 
+
+            !Find distance fraction at each vertex 
+            do ee=2,nvem
+                vp = medge_evtxs(ee-1)
+                vc = medge_evtxs(ee)
+                medge_evtxs_dfrac(ee) = medge_evtxs_dfrac(ee-1) + norm2(volume_mesh%vertices(vc,:) - volume_mesh%vertices(vp,:))
+            end do 
+            medge_evtxs_dfrac(1:nvem) = medge_evtxs_dfrac(1:nvem)/medge_evtxs_dfrac(nvem)
+
+            !Find position at 0.5 distance fraction 
+            eposfound = 0 
+            do ee=2,nvem
+                vp = ee-1
+                vc = ee
+                if ((medge_evtxs_dfrac(vc) .GE. 0.5d0) .AND. (medge_evtxs_dfrac(vp) .LE. 0.5d0)) then 
+                    distc = medge_evtxs_dfrac(vc)
+                    distp = medge_evtxs_dfrac(vp)
+                    if ((distc - distp) == 0.0d0) then 
+                        ef = 0.0d0 
+                    else
+                        ef = (0.5d0 - distp)/(distc - distp)
+                    end if 
+                    vp = medge_evtxs(ee-1)
+                    vc = medge_evtxs(ee)
+                    emx = volume_mesh%vertices(vc,1)*ef + volume_mesh%vertices(vp,1)*(1.0d0 - ef)
+                    emy = volume_mesh%vertices(vc,2)*ef + volume_mesh%vertices(vp,2)*(1.0d0 - ef)
+                    eposfound = 1
+                    exit 
+                end if 
+            end do 
+            if (eposfound == 1) then 
+                edgemidpN(emtgt,1) = emx
+                edgemidpN(emtgt,2) = emy
+            else
+                edgemidpN(emtgt,1) = 0.5d0*(volume_mesh%vertices(vstart,1) + volume_mesh%vertices(vend,1))
+                edgemidpN(emtgt,2) = 0.5d0*(volume_mesh%vertices(vstart,2) + volume_mesh%vertices(vend,2))
+            end if 
+
+            !Reset vertex list and distance fractions 
+            medge_evtxs(1:nvem) = 0
+            medge_evtxs_dfrac(1:nvem) = 0.0d0 
+        end do 
+    end if
+end do 
+
+!Store new mesh edges and midpoints
 volume_mesh%nedge = nedgeN !+ esnidx
 deallocate(volume_mesh%edge)
 allocate(volume_mesh%edge(volume_mesh%nedge,4))
 volume_mesh%edge(:,:) = edgeN(1:nedgeN,:)
+allocate(volume_mesh%edge_midpoint(volume_mesh%nedge,2))
+volume_mesh%edge_midpoint(:,:) = edgemidpN(1:nedgeN,:)
 
 !Map retained vertices 
 nvtxN = 0 
@@ -1869,8 +1982,292 @@ end subroutine simplify_surface
 
 
 
-!Subroutine to structure mesh for SU2 output format ===========================
-subroutine structure_mesh_for_SU2(volume_mesh)
+!Subroutine to remove mesh internal valence two vertices by merging adjacent edges ===========================
+subroutine clean_internal_vlnc2_vertices(volume_mesh,cm2dopt)
+implicit none 
+
+!Variables - Import
+type(cm2d_options) :: cm2dopt
+type(vol_mesh_data) :: volume_mesh
+
+!Variables - Local
+integer(in) :: cc,ee,vv,aa 
+integer(in) :: v1,v2,c3,c4,e1,e2,nintv2,Nenew,Nvnew,maxcedge,etgt,nmerge,emidx,vm1,vm2,c3n,c4n
+integer(in) :: valence(volume_mesh%nvtx),vtx_bndry(volume_mesh%nvtx),edge_map(volume_mesh%nedge)
+integer(in) :: nedge_cell(volume_mesh%ncell),vtx_map(volume_mesh%nvtx)
+integer(in) :: V2E(volume_mesh%nvtx,4),V2Eloc(volume_mesh%nvtx,4)
+integer(in), dimension(:), allocatable :: cedge_loop,cvtx_loop,emerge,vtx_surfseg_new
+integer(in), dimension(:,:), allocatable :: cell2edge,edge_new
+real(dp), dimension(:,:), allocatable :: vertices_new
+
+!Evaluate vertex valence 
+valence(:) = 0 
+do ee=1,volume_mesh%nedge
+    valence(volume_mesh%edge(ee,1)) = valence(volume_mesh%edge(ee,1)) + 1
+    valence(volume_mesh%edge(ee,2)) = valence(volume_mesh%edge(ee,2)) + 1
+end do 
+
+!Tag surface vertices 
+vtx_bndry(:) = 0
+do ee=1,volume_mesh%nedge !all surface and boundary edges are ordered 
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if ((c3 .LT. 0) .OR. (c4 .LT. 0)) then
+        vtx_bndry(v1) = 1
+        vtx_bndry(v2) = 1
+    end if
+end do 
+
+!Count vertices that will be removed
+nintv2 = 0 
+do vv=1,volume_mesh%nvtx
+    if ((vtx_bndry(vv) == 0) .AND. (valence(vv) == 2)) then 
+        nintv2 = nintv2 + 1
+    end if
+end do 
+
+!Build list of edges in each cell 
+nedge_cell(:) = 0 
+do ee=1,volume_mesh%nedge
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if (c3 .GT. 0) then 
+        nedge_cell(c3) = nedge_cell(c3) + 1
+    end if 
+    if (c4 .GT. 0) then 
+        nedge_cell(c4) = nedge_cell(c4) + 1
+    end if 
+end do 
+maxcedge = maxval(nedge_cell)
+allocate(cell2edge(volume_mesh%ncell,maxcedge))
+cell2edge(:,:) = 0 
+nedge_cell(:) = 0 
+do ee=1,volume_mesh%nedge
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if (c3 .GT. 0) then 
+        nedge_cell(c3) = nedge_cell(c3) + 1
+        cell2edge(c3,nedge_cell(c3)) = ee 
+    end if 
+    if (c4 .GT. 0) then 
+        nedge_cell(c4) = nedge_cell(c4) + 1
+        cell2edge(c4,nedge_cell(c4)) = ee 
+    end if 
+end do 
+
+!Build V2E on the mesh
+V2E(:,:) = 0 
+do ee=1,volume_mesh%nedge
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    do aa=1,4
+        if (V2E(v1,aa) == 0) then 
+            V2E(v1,aa) = ee 
+            exit 
+        end if 
+    end do 
+    do aa=1,4
+        if (V2E(v2,aa) == 0) then 
+            V2E(v2,aa) = ee 
+            exit 
+        end if 
+    end do 
+end do 
+
+!Map edges to merged indecies 
+Nenew = 0 
+edge_map(:) = 0 
+do ee=1,volume_mesh%nedge
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if ((c3 .LT. 0) .OR. (c4 .LT. 0)) then 
+        if (edge_map(ee) == 0) then 
+            Nenew = Nenew + 1
+            edge_map(ee) = Nenew
+        end if 
+    elseif (valence(v1) == 2) then 
+        e1 = V2E(v1,1)
+        e2 = V2E(v1,2)
+        if ((edge_map(e1) == 0) .AND. (edge_map(e2) == 0)) then 
+            Nenew = Nenew + 1
+            edge_map(e1) = -Nenew
+            edge_map(e2) = -Nenew
+        elseif ((edge_map(e1) == 0) .AND. (edge_map(e2) .NE. 0)) then 
+            edge_map(e1) = edge_map(e2)
+        elseif ((edge_map(e1) .NE. 0) .AND. (edge_map(e2) == 0)) then 
+            edge_map(e2) = edge_map(e1)
+        end if 
+    elseif (valence(v2) == 2) then 
+        e1 = V2E(v2,1)
+        e2 = V2E(v2,2)
+        if ((edge_map(e1) == 0) .AND. (edge_map(e2) == 0)) then 
+            Nenew = Nenew + 1
+            edge_map(e1) = -Nenew
+            edge_map(e2) = -Nenew
+        elseif ((edge_map(e1) == 0) .AND. (edge_map(e2) .NE. 0)) then 
+            edge_map(e1) = edge_map(e2)
+        elseif ((edge_map(e1) .NE. 0) .AND. (edge_map(e2) == 0)) then 
+            edge_map(e2) = edge_map(e1)
+        end if 
+    else
+        if (edge_map(ee) == 0) then 
+            Nenew = Nenew + 1
+            edge_map(ee) = Nenew
+        end if 
+    end if 
+end do 
+
+!Build new merged edges 
+allocate(cedge_loop(maxcedge)) 
+allocate(cvtx_loop(maxcedge))
+allocate(emerge(maxcedge))
+allocate(edge_new(Nenew,4))
+edge_new(:,:) = 0 
+V2Eloc(:,:) = 0 
+do ee=1,volume_mesh%nedge
+    if (edge_map(ee) .GT. 0) then 
+        edge_new(edge_map(ee),:) = volume_mesh%edge(ee,:)
+    end if 
+end do 
+do cc=1,volume_mesh%ncell
+
+    !Build ordered loop in this cell 
+    call build_cell_edges_vertices(cedge_loop,cvtx_loop,volume_mesh,nedge_cell,cell2edge,V2Eloc,cc)
+
+    !Build merged edges
+    do aa=1,nedge_cell(cc)
+
+        !Find initial edge to merge 
+        emidx = 0
+        do ee=1,nedge_cell(cc)
+            etgt = cell2edge(cc,ee)
+            if (edge_map(etgt) .LT. 0) then 
+                emidx = edge_map(etgt)
+                exit 
+            end if 
+        end do 
+
+        !Exit if no edges to merge 
+        if (emidx == 0) then 
+            exit 
+        end if 
+
+        !Collect edges  
+        nmerge = 0 
+        emerge(:) = 0 
+        do ee=1,nedge_cell(cc)
+            etgt = cell2edge(cc,ee)
+            if (edge_map(etgt) == emidx) then 
+                nmerge = nmerge + 1
+                emerge(nmerge) = etgt 
+                edge_map(etgt) = abs(edge_map(etgt))
+            end if 
+        end do 
+
+        !Find start vertex and cell adjacency for this edge 
+        etgt = emerge(1)
+        if (valence(volume_mesh%edge(etgt,1)) .GT. 2) then 
+            vm1 = volume_mesh%edge(etgt,1)
+            c3n = volume_mesh%edge(etgt,3)
+            c4n = volume_mesh%edge(etgt,4)
+        elseif (valence(volume_mesh%edge(etgt,2)) .GT. 2) then 
+            vm1 = volume_mesh%edge(etgt,2)
+            c3n = volume_mesh%edge(etgt,4)
+            c4n = volume_mesh%edge(etgt,3)
+        else
+            vm1 = 0 
+            print *, '** edge merge failure'
+        end if 
+
+        !Find end vertex
+        etgt = emerge(nmerge)
+        if (valence(volume_mesh%edge(etgt,1)) .GT. 2) then 
+            vm2 = volume_mesh%edge(etgt,1)
+        elseif (valence(volume_mesh%edge(etgt,2)) .GT. 2) then 
+            vm2 = volume_mesh%edge(etgt,2)
+        else
+            vm2 = 0 
+            print *, '** edge merge failure'
+        end if 
+
+        !Build new edge 
+        edge_new(abs(emidx),1) = vm1
+        edge_new(abs(emidx),2) = vm2
+        edge_new(abs(emidx),3) = c3n
+        edge_new(abs(emidx),4) = c4n 
+    end do 
+
+    !Reset V2Eloc
+    do ee=1,nedge_cell(cc)
+        etgt = cell2edge(cc,ee)
+        v1 = volume_mesh%edge(etgt,1)
+        v2 = volume_mesh%edge(etgt,2)
+        V2Eloc(v1,:) = 0 
+        V2Eloc(v2,:) = 0
+    end do 
+end do 
+
+!Build new vertices 
+Nvnew = 0 
+vtx_map(:) = 0 
+do ee=1,Nenew
+    v1 = edge_new(ee,1)
+    v2 = edge_new(ee,2)
+    if (vtx_map(v1) == 0) then 
+        Nvnew = Nvnew + 1
+        vtx_map(v1) = Nvnew
+    end if 
+    if (vtx_map(v2) == 0) then 
+        Nvnew = Nvnew + 1
+        vtx_map(v2) = Nvnew
+    end if 
+end do 
+allocate(vertices_new(Nvnew,2))
+allocate(vtx_surfseg_new(Nvnew))
+vertices_new(:,:) = 0.0d0 
+vtx_surfseg_new(:) = 0
+do vv=1,volume_mesh%nvtx
+    if (vtx_map(vv) .GT. 0) then 
+        vertices_new(vtx_map(vv),:) = volume_mesh%vertices(vv,:)
+        vtx_surfseg_new(vtx_map(vv)) = volume_mesh%vtx_surfseg(vv)
+    end if 
+end do 
+
+!Map updated edges 
+do ee=1,Nenew
+    edge_new(ee,1) = vtx_map(edge_new(ee,1)) 
+    edge_new(ee,2) = vtx_map(edge_new(ee,2)) 
+end do 
+
+!Store new items in the volume mesh structure 
+deallocate(volume_mesh%edge)
+deallocate(volume_mesh%vertices)
+deallocate(volume_mesh%vtx_surfseg)
+allocate(volume_mesh%edge(Nenew,4))
+volume_mesh%edge(:,:) = edge_new(:,:)
+allocate(volume_mesh%vertices(Nvnew,2))
+volume_mesh%vertices(:,:) = vertices_new(:,:)
+allocate(volume_mesh%vtx_surfseg(Nvnew))
+volume_mesh%vtx_surfseg(:) = vtx_surfseg_new(:)
+volume_mesh%nedge = Nenew
+volume_mesh%nvtx = Nvnew
+
+!Display
+if (cm2dopt%dispt == 1) then
+    write(*,'(A,I0,A)') '    {collapsed ',nintv2,' internal valence two vertices}'
+end if 
+return 
+end subroutine clean_internal_vlnc2_vertices
+
+
+
+
+!Subroutine divide cells to ensure only tri and quad cells exist in the mesh ===========================
+subroutine split_vlnc_gt4cells(volume_mesh)
 implicit none 
 
 !Variables - Import
@@ -1885,7 +2282,7 @@ integer(in), dimension(:), allocatable :: cedge_loop,cvtx_loop,cell_new,clevtemp
 integer(in), dimension(:,:), allocatable :: cell2edge,edge_new
 real(dp) :: EWsum,Ledge
 real(dp) :: vmtemp(2)
-real(dp), dimension(:,:), allocatable :: vertices_new
+real(dp), dimension(:,:), allocatable :: vertices_new,edge_midpoint_new
 
 !Build list of edges in each cell 
 nedge_cell(:) = 0 
@@ -1951,8 +2348,11 @@ do cc=1,volume_mesh%ncell
     end if
 end do 
 allocate(edge_new(Nenew,4))
+allocate(edge_midpoint_new(Nenew,2))
 edge_new(:,:) = 0 
 edge_new(1:volume_mesh%nedge,:) = volume_mesh%edge(:,:)
+edge_midpoint_new(:,:) = 0.0d0 
+edge_midpoint_new(1:volume_mesh%nedge,:) = volume_mesh%edge_midpoint(:,:)
 
 !Index split vertices 
 Vins = volume_mesh%nvtx 
@@ -2048,8 +2448,11 @@ end do
 deallocate(volume_mesh%edge)
 deallocate(volume_mesh%vertices)
 deallocate(volume_mesh%cell_level)
+deallocate(volume_mesh%edge_midpoint)
 allocate(volume_mesh%edge(Nenew,4))
 volume_mesh%edge(:,:) = edge_new(:,:)
+allocate(volume_mesh%edge_midpoint(Nenew,2))
+volume_mesh%edge_midpoint(:,:) = edge_midpoint_new(:,:)
 allocate(volume_mesh%vertices(Nvnew,2))
 volume_mesh%vertices(:,:) = vertices_new(:,:)
 allocate(volume_mesh%cell_level(Ncnew))
@@ -2058,7 +2461,362 @@ volume_mesh%nedge = Nenew
 volume_mesh%nvtx = Nvnew
 volume_mesh%ncell = Ncnew
 return 
-end subroutine structure_mesh_for_SU2
+end subroutine split_vlnc_gt4cells
+
+
+
+
+!Subroutine to structure mesh for SU2_dual output format ===========================
+subroutine construct_dual_mesh(volume_mesh)
+implicit none 
+
+!Variables - Import
+type(vol_mesh_data) :: volume_mesh
+
+!Variables - Local 
+integer(in) :: vv,ee,cc 
+integer(in) :: v1,v2,c3,c4,e1,e2,bc1,bc2,bcnew,Ncnew,Nvnew,Nenew,maxcedge,etgt,is_surfcell,Nvcell,exist 
+integer(in) :: cell_vtxidx(volume_mesh%ncell),edge_vtxidx(volume_mesh%nedge),vtx_cidx(volume_mesh%nvtx),vtx_vidx(volume_mesh%nvtx)
+integer(in) :: vtx_bndry(volume_mesh%nvtx),vtx_onesurf(volume_mesh%nvtx),nedge_cell(volume_mesh%ncell)
+integer(in) :: vtx_on_cell(volume_mesh%nvtx)
+integer(in) :: edge_new(2*volume_mesh%nedge,4),V2E(volume_mesh%nvtx,2)
+integer(in), dimension(:,:), allocatable :: cell2edge
+real(dp) :: emx,emy,ledge
+real(dp) :: cvtx_new_weight(volume_mesh%ncell)
+real(dp) :: cvtx_new(volume_mesh%ncell,2),evtx_new(volume_mesh%nedge,2)
+real(dp), dimension(:,:), allocatable :: vertices_new
+
+!Build list of edges in each cell 
+nedge_cell(:) = 0 
+do ee=1,volume_mesh%nedge
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if (c3 .GT. 0) then 
+        nedge_cell(c3) = nedge_cell(c3) + 1
+    end if 
+    if (c4 .GT. 0) then 
+        nedge_cell(c4) = nedge_cell(c4) + 1
+    end if 
+end do 
+maxcedge = maxval(nedge_cell)
+allocate(cell2edge(volume_mesh%ncell,maxcedge))
+cell2edge(:,:) = 0 
+nedge_cell(:) = 0 
+do ee=1,volume_mesh%nedge
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if (c3 .GT. 0) then 
+        nedge_cell(c3) = nedge_cell(c3) + 1
+        cell2edge(c3,nedge_cell(c3)) = ee 
+    end if 
+    if (c4 .GT. 0) then 
+        nedge_cell(c4) = nedge_cell(c4) + 1
+        cell2edge(c4,nedge_cell(c4)) = ee 
+    end if 
+end do 
+
+!Tag surface vertices 
+vtx_bndry(:) = 0
+do ee=1,volume_mesh%nedge !all surface and boundary edges are ordered 
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if ((c3 .LT. 0) .OR. (c4 .LT. 0)) then
+        vtx_bndry(v1) = 1
+        vtx_bndry(v2) = 1
+    end if
+end do 
+
+!Tag vertices on edges attached to surface geometry 
+vtx_onesurf(:) = 0
+do ee=1,volume_mesh%nedge !all surface and boundary edges are ordered 
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    if ((vtx_bndry(v1) == 1) .OR. (vtx_bndry(v2) == 1)) then
+        vtx_onesurf(v1) = 1
+        vtx_onesurf(v2) = 1
+    end if 
+end do 
+
+!Build V2E for boundary condition vertices and edges
+V2E(:,:) = 0.0d0 
+do ee=1,volume_mesh%nedge !all surface and boundary edges are ordered 
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if ((c3 .LT. 0) .OR. (c4 .LT. 0)) then
+        V2E(v1,2) = ee
+        V2E(v2,1) = ee 
+    end if 
+end do 
+
+!Index new cells at mesh vertex locations 
+Ncnew = 0 
+vtx_cidx(:) = 0 
+do vv=1,volume_mesh%nvtx
+    Ncnew = Ncnew + 1
+    vtx_cidx(vv) = Ncnew
+end do 
+
+!Index new vertices at vertex, cell and edge locations 
+Nvnew = 0 
+cell_vtxidx(:) = 0 
+edge_vtxidx(:) = 0 
+vtx_vidx(:) = 0 
+do cc=1,volume_mesh%ncell
+    Nvnew = Nvnew + 1
+    cell_vtxidx(cc) = Nvnew
+end do 
+do ee=1,volume_mesh%nedge
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if ((c3 .LT. 0) .OR. (c4 .LT. 0)) then
+        Nvnew = Nvnew + 1
+        edge_vtxidx(ee) = Nvnew
+    end if
+end do 
+do vv=1,volume_mesh%nvtx 
+    if (vtx_bndry(vv) == 1) then 
+
+        !Adjacent edges 
+        e1 = V2E(vv,1)
+        e2 = V2E(vv,2)
+
+        !Adjacent boundary conditions 
+        bc1 = 0 
+        if (volume_mesh%edge(e1,3) .LT. 0) then 
+            bc1 = volume_mesh%edge(e1,3)
+        elseif (volume_mesh%edge(e1,4) .LT. 0) then 
+            bc1 = volume_mesh%edge(e1,4)
+        end if 
+        bc2 = 0 
+        if (volume_mesh%edge(e2,3) .LT. 0) then 
+            bc2 = volume_mesh%edge(e2,3)
+        elseif (volume_mesh%edge(e2,4) .LT. 0) then 
+            bc2 = volume_mesh%edge(e2,4)
+        end if 
+
+        !Retain if differing boundary conditions 
+        if (bc1 .NE. bc2) then 
+            Nvnew = Nvnew + 1
+            vtx_vidx(vv) = Nvnew
+        end if 
+    end if
+end do 
+
+!Build new vertices in current cells and edge midpoints 
+cvtx_new_weight(:) = 0.0d0 
+cvtx_new(:,:) = 0.0d0 
+evtx_new(:,:) = 0.0d0 
+do ee=1,volume_mesh%nedge
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    emx = 0.5d0*(volume_mesh%vertices(volume_mesh%edge(ee,1),1) + volume_mesh%vertices(volume_mesh%edge(ee,2),1))
+    emy = 0.5d0*(volume_mesh%vertices(volume_mesh%edge(ee,1),2) + volume_mesh%vertices(volume_mesh%edge(ee,2),2))
+    ledge = norm2(volume_mesh%vertices(volume_mesh%edge(ee,2),:) + volume_mesh%vertices(volume_mesh%edge(ee,1),:))
+    if ((c3 .NE. -1) .AND. (c4 .NE. -1)) then
+        evtx_new(ee,1) = emx 
+        evtx_new(ee,2) = emy 
+        if (c3 .GT. 0) then 
+            cvtx_new(c3,1) = cvtx_new(c3,1) + emx*ledge
+            cvtx_new(c3,2) = cvtx_new(c3,2) + emy*ledge
+            cvtx_new_weight(c3) = cvtx_new_weight(c3) + ledge
+        end if 
+        if (c4 .GT. 0) then 
+            cvtx_new(c4,1) = cvtx_new(c4,1) + emx*ledge
+            cvtx_new(c4,2) = cvtx_new(c4,2) + emy*ledge
+            cvtx_new_weight(c4) = cvtx_new_weight(c4) + ledge
+        end if 
+    elseif ((c3 == -1) .OR. (c4 == -1)) then
+        evtx_new(ee,:) = volume_mesh%edge_midpoint(ee,:) 
+    end if
+end do 
+cvtx_new(:,1) = cvtx_new(:,1)/cvtx_new_weight(:)
+cvtx_new(:,2) = cvtx_new(:,2)/cvtx_new_weight(:)
+
+!For surface cells bias vertices towards any vertices in the cell not connected to a surface edge 
+vtx_on_cell(:) = 0 
+do cc=1,volume_mesh%ncell
+
+    !Check if a surface cell 
+    is_surfcell = 0 
+    do ee=1,nedge_cell(cc)
+        etgt = cell2edge(cc,ee)
+        c3 = volume_mesh%edge(etgt,3)
+        c4 = volume_mesh%edge(etgt,4)
+        if ((c3 == -1) .OR. (c4 == -1)) then
+            is_surfcell = 1
+            exit 
+        end if 
+    end do 
+
+    !If surface cell then process
+    if (is_surfcell == 1) then  
+
+        !Build list of off surface edge vertices on this cell 
+        Nvcell = 0 
+        do ee=1,nedge_cell(cc)
+            etgt = cell2edge(cc,ee)
+            v1 = volume_mesh%edge(etgt,1)
+            v2 = volume_mesh%edge(etgt,2)
+            if (vtx_onesurf(v1) == 0) then 
+                exist = 0 
+                do vv=1,Nvcell
+                    if (vtx_on_cell(vv) == v1) then 
+                        exist = 1
+                        exit 
+                    end if 
+                end do 
+                if (exist == 0) then 
+                    Nvcell = Nvcell + 1
+                    vtx_on_cell(Nvcell) = v1 
+                end if 
+            end if 
+            if (vtx_onesurf(v2) == 0) then 
+                exist = 0 
+                do vv=1,Nvcell
+                    if (vtx_on_cell(vv) == v2) then 
+                        exist = 1
+                        exit 
+                    end if 
+                end do 
+                if (exist == 0) then 
+                    Nvcell = Nvcell + 1
+                    vtx_on_cell(Nvcell) = v2 
+                end if
+            end if 
+        end do 
+
+        !Update this cells vertex location 
+        if (Nvcell .GT. 0) then 
+            emx = sum(volume_mesh%vertices(vtx_on_cell(1:Nvcell),1))/real(Nvcell,dp)
+            emy = sum(volume_mesh%vertices(vtx_on_cell(1:Nvcell),2))/real(Nvcell,dp)
+            cvtx_new(cc,1) = (cvtx_new(cc,1)*0.25d0 + emx*0.75d0)
+            cvtx_new(cc,2) = (cvtx_new(cc,2)*0.25d0 + emy*0.75d0)
+        end if 
+
+        !Reset vertices on cell 
+        vtx_on_cell(1:Nvcell) = 0 
+    end if 
+end do 
+
+!Build new vertex list 
+allocate(vertices_new(Nvnew,2))
+vertices_new(:,:) = 0.0d0 
+do cc=1,volume_mesh%ncell
+    vertices_new(cell_vtxidx(cc),:) = cvtx_new(cc,:)
+end do 
+do ee=1,volume_mesh%nedge
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if ((c3 .LT. 0) .OR. (c4 .LT. 0)) then
+        vertices_new(edge_vtxidx(ee),:) = evtx_new(ee,:)
+    end if
+end do 
+do vv=1,volume_mesh%nvtx 
+    if (vtx_vidx(vv) .NE. 0) then 
+        vertices_new(vtx_vidx(vv),:) = volume_mesh%vertices(vv,:)
+    end if
+end do 
+
+!Build new edges connecting cell and edge midpoint vertices
+Nenew = 0
+edge_new(:,:) = 0 
+do ee=1,volume_mesh%nedge
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    c3 = volume_mesh%edge(ee,3)
+    c4 = volume_mesh%edge(ee,4)
+    if ((c3 .GT. 0) .AND. (c4 .GT. 0)) then
+        Nenew = Nenew + 1
+        edge_new(Nenew,1) = cell_vtxidx(c3)
+        edge_new(Nenew,2) = cell_vtxidx(c4)
+        edge_new(Nenew,3) = vtx_cidx(v2)
+        edge_new(Nenew,4) = vtx_cidx(v1)
+    elseif (c3 .LT. 0) then
+        Nenew = Nenew + 1
+        edge_new(Nenew,1) = cell_vtxidx(c4)
+        edge_new(Nenew,2) = edge_vtxidx(ee)
+        edge_new(Nenew,3) = vtx_cidx(v1)
+        edge_new(Nenew,4) = vtx_cidx(v2)
+    elseif (c4 .LT. 0) then
+        Nenew = Nenew + 1
+        edge_new(Nenew,1) = cell_vtxidx(c3)
+        edge_new(Nenew,2) = edge_vtxidx(ee)
+        edge_new(Nenew,3) = vtx_cidx(v1)
+        edge_new(Nenew,4) = vtx_cidx(v2)
+    end if 
+end do 
+
+!Build edges connecting edges either side of boundary condition vertices 
+do vv=1,volume_mesh%nvtx 
+    if (vtx_bndry(vv) == 1) then 
+
+        !Adjacent edges 
+        e1 = V2E(vv,1)
+        e2 = V2E(vv,2)
+
+        !Adjacent boundary conditions 
+        bc1 = 0 
+        if (volume_mesh%edge(e1,3) .LT. 0) then 
+            bc1 = volume_mesh%edge(e1,3)
+        elseif (volume_mesh%edge(e1,4) .LT. 0) then 
+            bc1 = volume_mesh%edge(e1,4)
+        end if 
+        bc2 = 0 
+        if (volume_mesh%edge(e2,3) .LT. 0) then 
+            bc2 = volume_mesh%edge(e2,3)
+        elseif (volume_mesh%edge(e2,4) .LT. 0) then 
+            bc2 = volume_mesh%edge(e2,4)
+        end if 
+
+        !Edge construction 
+        if (bc1 == bc2) then !build one edge
+            bcnew = bc1 
+            Nenew = Nenew + 1
+            edge_new(Nenew,1) = edge_vtxidx(e1)
+            edge_new(Nenew,2) = edge_vtxidx(e2)
+            edge_new(Nenew,3) = bcnew
+            edge_new(Nenew,4) = vtx_cidx(vv)
+        else !build two edges 
+            Nenew = Nenew + 1
+            edge_new(Nenew,1) = edge_vtxidx(e1)
+            edge_new(Nenew,2) = vtx_vidx(vv)
+            edge_new(Nenew,3) = bc1
+            edge_new(Nenew,4) = vtx_cidx(vv)
+            Nenew = Nenew + 1
+            edge_new(Nenew,1) = vtx_vidx(vv)
+            edge_new(Nenew,2) = edge_vtxidx(e2)
+            edge_new(Nenew,3) = bc2
+            edge_new(Nenew,4) = vtx_cidx(vv)
+        end if 
+    end if 
+end do 
+
+!Store new items in the volume mesh structure 
+deallocate(volume_mesh%edge)
+deallocate(volume_mesh%vertices)
+deallocate(volume_mesh%cell_level)
+allocate(volume_mesh%edge(Nenew,4))
+volume_mesh%edge(:,:) = edge_new(1:Nenew,:)
+allocate(volume_mesh%vertices(Nvnew,2))
+volume_mesh%vertices(:,:) = vertices_new(:,:)
+allocate(volume_mesh%cell_level(Ncnew))
+volume_mesh%cell_level(:) = 0
+volume_mesh%nedge = Nenew
+volume_mesh%nvtx = Nvnew
+volume_mesh%ncell = Ncnew
+
+! open(11,file='io/vtxtest.dat')
+! do vv=1,Nvnew
+!     write(11,*) vertices_new(vv,:)
+! end do 
+! close(11)
+
+return 
+end subroutine construct_dual_mesh
 
 
 

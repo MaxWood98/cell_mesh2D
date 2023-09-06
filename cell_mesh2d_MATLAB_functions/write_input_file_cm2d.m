@@ -29,7 +29,7 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n','#Boundary normal direction switch in to / out of the mesh domain');
     fprintf(fid,'%s \n',cm2dop.boundary_dir);
     fprintf(fid,'%s \n',' '); 
-    fprintf(fid,'%s \n','#Mesh output format (flow2d / SU2)');
+    fprintf(fid,'%s \n','#Mesh output format (flow2d / su2_cutcell / su2_dual)');
     fprintf(fid,'%s \n',cm2dop.meshfrmat);
     fprintf(fid,'%s \n',' '); 
 

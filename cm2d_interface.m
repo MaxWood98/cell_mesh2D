@@ -15,67 +15,69 @@ clc
 %% Input
 
 %General options 
-cm2dop.condisp = 1;           %Toggle console display (1 = yes || 0 = no)
+cm2dop.condisp = 1;               %Toggle console display (1 = yes || 0 = no)
 
 %Mesh format options 
-cm2dop.meshtype = 0;          %Type of mesh (0 = cutcell | 1 = minD block mesh)
-cm2dop.meshinout = 'out';     %Mesh inside or outside of geometry (default out)
-cm2dop.surface_dir = 'in';    %Surface normal direction switch in to / out of the mesh domain (default in)
-cm2dop.boundary_dir = 'in';   %Boundary normal direction switch in to / out of the mesh domain (default in)
-cm2dop.meshfrmat = 'SU2';  %Mesh output format (flow2d / SU2)
+cm2dop.meshtype = 0;              %Type of mesh (0 = cutcell | 1 = minD block mesh)
+cm2dop.meshinout = 'out';         %Mesh inside or outside of geometry (default out)
+cm2dop.surface_dir = 'in';        %Surface normal direction switch in to / out of the mesh domain (default in)
+cm2dop.boundary_dir = 'in';       %Boundary normal direction switch in to / out of the mesh domain (default in)
+cm2dop.meshfrmat = 'su2_dual';    %Mesh output format (flow2d / su2_cutcell / su2_dual)
+% cm2dop.meshfrmat = 'flow2d';
+% cm2dop.meshfrmat = 'su2_cutcell';
 
 %Cut-Cell mesh options ====================================================
 %Quadtree options
-cm2dop.nrefine = 8;           %Maximum refinement level 
-cm2dop.nrefineB = 4;          %Maximum additional refinement levels in high curvature regions
-cm2dop.ncell_max = 200000;    %Maximum number of cells
-cm2dop.nrflood_i = 6;         %Refinement adjacency flooding iterations at the first refinement
-cm2dop.nrflood_f = 4;         %Refinement adjacency flooding iterations at the final refinement
-cm2dop.nrflood_b = 3;         %Refinement adjacency flooding iterations on boosted refinement
-cm2dop.fbound = 10;           %Far field distance from object centre  
-cm2dop.coffset = [0.0 0.0];   %Object/mesh centre offset (x / y)
+cm2dop.nrefine = 11;               %Maximum refinement level 
+cm2dop.nrefineB = 4;              %Maximum additional refinement levels in high curvature regions
+cm2dop.ncell_max = 200000;        %Maximum number of cells
+cm2dop.nrflood_i = 6;             %Refinement adjacency flooding iterations at the first refinement
+cm2dop.nrflood_f = 4;             %Refinement adjacency flooding iterations at the final refinement
+cm2dop.nrflood_b = 3;             %Refinement adjacency flooding iterations on boosted refinement
+cm2dop.fbound = 15;               %Far field distance from object centre  
+cm2dop.coffset = [0.0 0.0];       %Object/mesh centre offset (x / y)
 
 %Custom domain bound specification 
-cm2dop.set_mbounds = 0;       %Toggle forcing of custom mesh domain bounds
-cm2dop.xmin = 0.2;            %xmin
-cm2dop.xmax = 11.8;           %xmax
-cm2dop.ymin = 0.2;            %ymin
-cm2dop.ymax = 11.8;           %ymin
+cm2dop.set_mbounds = 0;           %Toggle forcing of custom mesh domain bounds
+cm2dop.xmin = 0.2;                %xmin
+cm2dop.xmax = 11.8;               %xmax
+cm2dop.ymin = 0.2;                %ymin
+cm2dop.ymax = 11.8;               %ymin
 
 %Mesh cleaning options
-cm2dop.eminlen = 1e-8;        %Minimum edge length as a fraction of an undeformed cell edge length at each refienemnt level 
-cm2dop.cminvol = 0.01;        %Volume fraction of an undeformed cell at each refinement level below which a cell is classed as a sliver cell
+cm2dop.eminlen = 1e-8;            %Minimum edge length as a fraction of an undeformed cell edge length at each refienemnt level 
+cm2dop.cminvol = 0.01;            %Volume fraction of an undeformed cell at each refinement level below which a cell is classed as a sliver cell
 
 %Mesh geometry intersection options
-cm2dop.enintmax = 50;         %Maximum number of mesh-geometry intersections on each mesh edge
-cm2dop.eintpad = 0.0;         %Edge-geometry intersection search zone padding as a fraction of the edge length 
-cm2dop.int_coin_tol = 1e-8;   %Intersection co-incidence tollerance as fraction of item length  
+cm2dop.enintmax = 50;             %Maximum number of mesh-geometry intersections on each mesh edge
+cm2dop.eintpad = 0.0;             %Edge-geometry intersection search zone padding as a fraction of the edge length 
+cm2dop.int_coin_tol = 1e-8;       %Intersection co-incidence tollerance as fraction of item length  
 
 %Surface format options
-cm2dop.surftype = 0;          %Geometry surface type (0 = 'simplified' | 1 = 'exact') 
-cm2dop.surfRcurvM = 1.0;      %Surface curvature multiplier
-cm2dop.surfRcurvNpts = 10;    %Number of vertices used to estimate local surface curvature
+cm2dop.surftype = 0;              %Geometry surface type (0 = 'simplified' | 1 = 'exact') 
+cm2dop.surfRcurvM = 1.0;          %Surface curvature multiplier
+cm2dop.surfRcurvNpts = 10;        %Number of vertices used to estimate local surface curvature
 
 %Mesh smoothing options
-cm2dop.nsstype = 0;           %Near surface smoothing type (0 = 'none' | 1 = 'Laplacian')
-cm2dop.nsvtxflood = 3;        %Vertex selection flooding iterations from surfaces
-cm2dop.nlpsmooth = 100;       %Smoothing iterations 
+cm2dop.nsstype = 0;               %Near surface smoothing type (0 = 'none' | 1 = 'Laplacian')
+cm2dop.nsvtxflood = 2;            %Vertex selection flooding iterations from surfaces
+cm2dop.nlpsmooth = 3;             %Smoothing iterations 
 
 %ADtree options
-cm2dop.adtree_spad = 0.0;     %Maximum padding size of adtree search bounding boxes as multiple of cell edge length
-cm2dop.adtree_maxd = 4;       %AD tree maximum depth in terms of dimension cycles (tree is 4d)
+cm2dop.adtree_spad = 0.0;         %Maximum padding size of adtree search bounding boxes as multiple of cell edge length
+cm2dop.adtree_maxd = 4;           %AD tree maximum depth in terms of dimension cycles (tree is 4d)
 
 %Gradient linking options
-cm2dop.glink_con = 0;         %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
-cm2dop.glink_nnn = 10;        %Number of nearest neighbours to use for volume to surface gradient interpolation
-cm2dop.glink_nsmooth = 4;     %Number of vertices each side used to smooth the gradient at each surface vertex
+cm2dop.glink_con = 0;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
+cm2dop.glink_nnn = 10;            %Number of nearest neighbours to use for volume to surface gradient interpolation
+cm2dop.glink_nsmooth = 4;         %Number of vertices each side used to smooth the gradient at each surface vertex
 
 %Boundary condition options ===============================================
 %Boundary condition options 
-cm2dop.set_custom_bc = 0;     %Set custom boundary conditions in specifed regions (1 = yes | 0 = no)
-cm2dop.rem_ffzones = 0;       %Remove any region of the mesh connected to a far field boundary condition
-cm2dop.rem_nczones = 0;       %Remove any region of the mesh connected to a non custom set boundary condition
-cm2dop.rem_iszones = 0;       %Remove any isolated region of the mesh connected only to a wall boundary condition 
+cm2dop.set_custom_bc = 0;         %Set custom boundary conditions in specifed regions (1 = yes | 0 = no)
+cm2dop.rem_ffzones = 0;           %Remove any region of the mesh connected to a far field boundary condition
+cm2dop.rem_nczones = 0;           %Remove any region of the mesh connected to a non custom set boundary condition
+cm2dop.rem_iszones = 0;           %Remove any isolated region of the mesh connected only to a wall boundary condition 
 
 %Boundary condition zone bounds [xmin xmax ymin ymax]
 BC_zones_loc = [0.0 1.0 0.5 3.5;
@@ -153,7 +155,7 @@ patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','none','
 %Plot boundary conditions 
 for ii=1:Nedge
     if cell_lr(ii,1) == -1 %wall
-        % patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
+        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
     elseif cell_lr(ii,1) == -2 %far field
         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','b');
     elseif cell_lr(ii,1) == -3 || cell_lr(ii,1) == -5 || cell_lr(ii,1) == -6 %inflow
@@ -205,14 +207,14 @@ end
 % cmid(:,:) = cmid(:,:)./cmidls(:);
 % for ii=1:Nedge
 %     etgt = ii;
-%     if cell_lr(etgt,1) == -1
+%     if cell_lr(etgt,1) == 6479 || cell_lr(etgt,2) == 6479
 %         v1 = edge(etgt,1);
 %         v2 = edge(etgt,2);
 %         emidx = 0.5*(vtx(v1,1) + vtx(v2,1));
 %         emidy = 0.5*(vtx(v1,2) + vtx(v2,2));
 %         cadj = cell_lr(etgt,2);
 % 
-%         ledge = norm(vtx(v1,:) - vtx(v2,:))
+%         ledge = norm(vtx(v1,:) - vtx(v2,:));
 % 
 %         if cadj > 0
 %             plot([emidx cmid(cadj,1)],[emidy cmid(cadj,2)],'b','linewidth',2)
@@ -310,6 +312,37 @@ end
 % vtgt = 21;
 % plot(vertices(vbase(vtgt),1),vertices(vbase(vtgt),2),'b.','markersize',15)
 
+% ctgt = 3062;
+% for ii=1:Nedge
+%     etgt = ii;
+%     if cell_lr(etgt,1) == ctgt || cell_lr(etgt,2) == ctgt 
+%         etgt
+%         v1 = edge(etgt,1);
+%         v2 = edge(etgt,2);
+%         plot([vtx(v1,1) vtx(v2,1)],[vtx(v1,2) vtx(v2,2)],'r','linewidth',2)
+%     end
+% end
+
+
+% verticesT = load('io/vtxtest.dat');
+% plot(verticesT(:,1),verticesT(:,2),'r.')
+% 
+
+
+
+% for ii=1:Nedge
+%     etgt = ii;
+%     if cell_lr(etgt,1) < 0 
+%         v1 = edge(etgt,1);
+%         v2 = edge(etgt,2);
+%         emidx = 0.5*(vtx(v1,1) + vtx(v2,1));
+%         emidy = 0.5*(vtx(v1,2) + vtx(v2,2));
+%         dx = vtx(v2,1) - vtx(v1,1);
+%         dy = vtx(v2,2) - vtx(v1,2);
+%         plot([emidx emidx+dy],[emidy emidy-dx],'r','linewidth',2)
+%     end
+% end
+
 
 %Debug plots ==============================================================
 
@@ -321,7 +354,6 @@ xlabel('x')
 ylabel('y')
 hold off
 
-% axis([5.2881    5.5251    2.6031    2.8440]);
-% axis([-0.9819   -0.9276   -0.0134    0.0409]);
-% axis(1.0e-07 *[-0.4654    0.5992   -0.5201    0.5445])
+% axis([-0.9789   -0.9747   -0.0020    0.0022]);
+
 

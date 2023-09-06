@@ -6,8 +6,8 @@
 		}
 	],
 	"settings": {
-		// "fortran.linter.modOutput": "C:/Users/mw16116/OneDrive - University of Bristol/PhD/Cell_Mesher_2D_new/cell_mesh_2D/obj",
-		"fortran.linter.modOutput": "C:/Users/max/OneDrive - University of Bristol/PhD/Cell_Mesher_2D_new/cell_mesh_2D/obj",
+		"fortran.linter.modOutput": "C:/Users/mw16116/OneDrive - University of Bristol/PhD/Cell_Mesher_2D/cell_mesh_2D/obj",
+		// "fortran.linter.modOutput": "C:/Users/max/OneDrive - University of Bristol/PhD/Cell_Mesher_2D_new/cell_mesh_2D/obj",
 		"makefile.extensionOutputFolder": "./.vscode"
 	}
 }

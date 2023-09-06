@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 2.0
-!Updated 05-09-2023
+!Version 2.1
+!Updated 06-09-2023
 
 !Main
 program cell_mesh
@@ -38,7 +38,7 @@ call cell_mesh2d_mesh(volume_mesh,surface_mesh,cm2dopt)
 !Export items 
 call export_status(cm2dopt)
 call export_volume_mesh(volume_mesh,cm2dopt)
-if (cm2dopt%meshfrmat == 'SU2') then 
+if ((cm2dopt%meshfrmat == 'su2_cutcell') .OR. (cm2dopt%meshfrmat == 'su2_dual')) then 
     call export_volume_mesh_SU2(volume_mesh,cm2dopt)
 end if 
 if (cm2dopt%glink_con == 1) then 

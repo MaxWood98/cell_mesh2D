@@ -38,7 +38,7 @@ type vol_mesh_data
     integer(in), dimension(:,:), allocatable :: V2E
     integer(in), dimension(:,:), allocatable :: edge !v1 v2 cellL cellR
     real(dp), dimension(:), allocatable :: surf_vtx_segfrac
-    real(dp), dimension(:,:), allocatable :: vertices
+    real(dp), dimension(:,:), allocatable :: vertices,edge_midpoint
     type(surfFvolinterp), dimension(:), allocatable :: vsinterp
     type(cell_data), dimension(:), allocatable :: cells 
 end type vol_mesh_data

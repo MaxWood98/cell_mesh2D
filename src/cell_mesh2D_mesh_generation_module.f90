@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 1.4
-!Updated 05-09-2023
+!Version 1.5
+!Updated 06-09-2023
 
 !Module
 module cellmesh2d_mesh_generation_mod
@@ -51,7 +51,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.4.6 || 22/08/2023         |'
+    write(*,'(A)')'|        Version 0.4.7 || 06/09/2023         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'
@@ -235,6 +235,12 @@ end do
 !Remap cell indecies 
 call remap_cell_indecies(volume_mesh)
 
+!Remove mesh internal valence two vertices 
+call clean_internal_vlnc2_vertices(volume_mesh,cm2dopt)
+
+
+
+
 !Simplify the mesh surface within each cell if simplified surface requested
 if (cm2dopt%surface_type == 0) then     
     if (cm2dopt%dispt == 1) then
@@ -258,9 +264,13 @@ if (cm2dopt%boundary_dir == 'out') then
     call flip_set_edges(volume_mesh,-6_in)
 end if 
 
-!Restructure mesh for SU2 output format
-if (cm2dopt%meshfrmat == 'SU2') then 
-    call structure_mesh_for_SU2(volume_mesh)
+!Restructure mesh for SU2 output formats 
+if (cm2dopt%meshfrmat == 'su2_cutcell') then 
+    call split_vlnc_gt4cells(volume_mesh)
+    call remap_cell_indecies(volume_mesh)
+    call build_mesh_cells(volume_mesh)
+elseif (cm2dopt%meshfrmat == 'su2_dual') then 
+    call construct_dual_mesh(volume_mesh)
     call remap_cell_indecies(volume_mesh)
     call build_mesh_cells(volume_mesh)
 end if 
