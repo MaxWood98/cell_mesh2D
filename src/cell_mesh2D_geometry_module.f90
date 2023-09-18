@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 8.0
-!Updated 20-07-2023
+!Version 8.1
+!Updated 18-09-2023
 
 !Geometry subroutines module
 module cellmesh2d_geometry_mod
@@ -268,7 +268,8 @@ edir(:) = ve2(:) - ve1(:)
 edir(:) = edir(:)/norm2(edir(:))
 t = dot_product(vp - ve1,edir)
 vid(1:2) = ve1(:) + t*edir(:)
-f = norm2(vid(1:2) - ve1(:))/norm2(ve2(:) - ve1(:))
+f = dot_product(vid(1:2) - ve1(:),edir(:))/norm2(ve2(:) - ve1(:))
+! f = norm2(vid(1:2) - ve1(:))/norm2(ve2(:) - ve1(:))
 if (f .GT. 1.0d0) then 
     vid(1:2) = ve2(:)
 elseif (f .LT. 0.0d0) then 
@@ -392,7 +393,7 @@ real(dp) :: Rcurv
 real(dp), dimension(:,:) :: vertices
 
 !Variables - Local
-integer(in) :: ii,jj 
+integer(in) :: ii,jj
 integer(in) :: interp_pnt
 real(dp) :: Rs,dx_ds,dy_ds,dx_ds_2,dy_ds_2,denom
 real(dp) :: s(Ninterp),sdelta(Ninterp)
@@ -411,7 +412,7 @@ end do
 !Check for coincident vertices 
 do ii=2,Ninterp
     if (abs(s(ii) - s(ii-1)) == 0.0d0) then 
-        print *, '** detected two co-incident surface vertices '
+        print *, '** detected two co-incident surface vertices ',interp_stencil(ii),interp_stencil(ii-1)
         Rcurv = 0.0d0 
         return 
     end if 

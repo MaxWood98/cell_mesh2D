@@ -2693,8 +2693,8 @@ do cc=1,volume_mesh%ncell
         if (Nvcell .GT. 0) then 
             emx = sum(volume_mesh%vertices(vtx_on_cell(1:Nvcell),1))/real(Nvcell,dp)
             emy = sum(volume_mesh%vertices(vtx_on_cell(1:Nvcell),2))/real(Nvcell,dp)
-            cvtx_new(cc,1) = (cvtx_new(cc,1)*0.25d0 + emx*0.75d0)
-            cvtx_new(cc,2) = (cvtx_new(cc,2)*0.25d0 + emy*0.75d0)
+            cvtx_new(cc,1) = (cvtx_new(cc,1)*0.5d0 + emx*0.5d0)
+            cvtx_new(cc,2) = (cvtx_new(cc,2)*0.5d0 + emy*0.5d0)
         end if 
 
         !Reset vertices on cell 

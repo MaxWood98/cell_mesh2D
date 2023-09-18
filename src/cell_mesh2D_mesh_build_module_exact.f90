@@ -1001,6 +1001,7 @@ do ee=1,volume_mesh_full%nedge
                     !Intersection type if any 
                     segval = seg_seg_intersect_bool(vl1,vl2,ve1,ve2)
                     if (segval .NE. 0) then 
+                    ! if (segval == 1) then 
 
                         !Find intersection location (is within edge and surface segment here)
                         vint = line_line_intersection_loc_inl1(ve1,ve2,vl1,vl2)
@@ -1157,6 +1158,10 @@ do ee=1,volume_mesh_full%nedge
                 edge_clip(ee)%int_seg_type(1) = 2
             elseif ((edge_clip(ee)%int_inout(1) == -1) .AND. (vtx_external(ev1) == 0)) then !exit so segment internal 
                 edge_clip(ee)%int_seg_type(1) = 3
+            ! elseif (vtx_external(ev1) == 1) then !fallback set as external if first vertex is external
+            !     edge_clip(ee)%int_seg_type(1) = 2
+            ! elseif (vtx_external(ev1) == 0) then !fallback set as internal if first vertex is internal
+            !     edge_clip(ee)%int_seg_type(1) = 3
             else 
                 cm2dopt%cm2dfailure = 1
                 print *, '** edge intersection enter/exit disagreement with vtxinternal at edge: ',ee

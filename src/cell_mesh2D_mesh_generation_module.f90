@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 1.5
-!Updated 06-09-2023
+!Version 1.8
+!Updated 18-09-2023
 
 !Module
 module cellmesh2d_mesh_generation_mod
@@ -29,6 +29,7 @@ type(vol_mesh_data) :: volume_mesh
 integer(in) :: ii
 
 !Object data
+integer(in) :: nrem
 real(dp) :: obj_max_x,obj_max_y,obj_min_x,obj_min_y,obj_cx,obj_cy
 real(dp), dimension(:,:), allocatable :: tvtx
 
@@ -51,7 +52,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.4.7 || 06/09/2023         |'
+    write(*,'(A)')'|        Version 0.5.1 || 18/09/2023         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'
@@ -85,11 +86,22 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)') '--> constructing surface geometry parameters'
 end if
 
+!Clean surface mesh to remove zero length segments 
+do ii=1,10
+    call clean_surface(surface_mesh,cm2dopt,nrem)
+    if (nrem == 0) then 
+        exit 
+    end if 
+end do 
+
 !Orient surface mesh for positive object volume (this ensures normal vector convention is correct)
 call orient_surface(surface_mesh,cm2dopt)
 
-!Build v2f for surface geometry
+!Build v2f for surface geometry and check for non-manifold surface geometry 
 call construct_surface_v2f(surface_mesh,cm2dopt)
+if (cm2dopt%cm2dfailure == 1) then
+    return 
+end if 
 
 !Evaluate surface mesh segment curvature 
 call evaluate_surf_rcurv(surface_mesh,cm2dopt)

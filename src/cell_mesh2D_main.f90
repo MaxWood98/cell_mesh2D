@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 2.1
-!Updated 06-09-2023
+!Version 2.2
+!Updated 18-09-2023
 
 !Main
 program cell_mesh
@@ -34,6 +34,12 @@ call import_surface_geometry(surface_mesh,cm2dopt)
 
 !Construct mesh
 call cell_mesh2d_mesh(volume_mesh,surface_mesh,cm2dopt)
+
+!Exit if failure detected 
+if (cm2dopt%cm2dfailure == 1) then 
+    call export_status(cm2dopt)
+    stop 
+end if 
 
 !Export items 
 call export_status(cm2dopt)

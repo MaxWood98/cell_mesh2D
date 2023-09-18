@@ -18,6 +18,20 @@ use ISO_FORTRAN_ENV, only: dp=>real64
 !Set round off error bound 
 real(dp), parameter :: min_precision = 1E-12_dp 
 
+!Surface from volume interpolation type
+type surfFvolinterp
+    integer(in) :: npnts_vi
+    integer(in), dimension(:), allocatable :: vol_pnts,surf_smooth_pnts
+    real(dp), dimension(:), allocatable :: surf2volRBF,surf_smoothRBF
+    real(dp), dimension(:,:), allocatable :: Ri
+end type surfFvolinterp
+
+!Cell data type 
+type cell_data 
+    integer(in) :: nvtx,nedge 
+    integer(in), dimension(:), allocatable :: vertices,edges
+end type cell_data
+
 !Options data type
 type cm2d_options
     character(len=:), allocatable :: iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshfrmat
@@ -46,6 +60,7 @@ end type vol_mesh_data
 !Surface data type 
 type surface_data
     integer(in) :: nvtx,nfcs,nvtxf
+    integer(in), dimension(:), allocatable :: vtx_active
     integer(in), dimension(:,:), allocatable :: faces,v2f,smvtx2vmedge
     real(dp), dimension(:), allocatable :: face_rcurv,vtx_rcurv,vtx_rsearch
     real(dp), dimension(:,:), allocatable :: vertices,vertices_full
@@ -69,19 +84,5 @@ type edgeint
     real(dp), dimension(:), allocatable :: intfrac
     real(dp), dimension(:,:), allocatable :: intloc 
 end type edgeint 
-
-!Surface from volume interpolation type
-type surfFvolinterp
-    integer(in) :: npnts_vi
-    integer(in), dimension(:), allocatable :: vol_pnts,surf_smooth_pnts
-    real(dp), dimension(:), allocatable :: surf2volRBF,surf_smoothRBF
-    real(dp), dimension(:,:), allocatable :: Ri
-end type surfFvolinterp
-
-!Cell data type 
-type cell_data 
-    integer(in) :: nvtx,nedge 
-    integer(in), dimension(:), allocatable :: vertices,edges
-end type cell_data
 
 end module cellmesh2d_data_mod

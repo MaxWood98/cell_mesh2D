@@ -22,14 +22,14 @@ cm2dop.meshtype = 0;              %Type of mesh (0 = cutcell | 1 = minD block me
 cm2dop.meshinout = 'out';         %Mesh inside or outside of geometry (default out)
 cm2dop.surface_dir = 'in';        %Surface normal direction switch in to / out of the mesh domain (default in)
 cm2dop.boundary_dir = 'in';       %Boundary normal direction switch in to / out of the mesh domain (default in)
-cm2dop.meshfrmat = 'su2_dual';    %Mesh output format (flow2d / su2_cutcell / su2_dual)
-% cm2dop.meshfrmat = 'flow2d';
+% cm2dop.meshfrmat = 'su2_dual';    %Mesh output format (flow2d / su2_cutcell / su2_dual)
+cm2dop.meshfrmat = 'flow2d';
 % cm2dop.meshfrmat = 'su2_cutcell';
 
 %Cut-Cell mesh options ====================================================
 %Quadtree options
-cm2dop.nrefine = 11;               %Maximum refinement level 
-cm2dop.nrefineB = 4;              %Maximum additional refinement levels in high curvature regions
+cm2dop.nrefine = 12;              %Maximum refinement level 
+cm2dop.nrefineB = 2;              %Maximum additional refinement levels in high curvature regions
 cm2dop.ncell_max = 200000;        %Maximum number of cells
 cm2dop.nrflood_i = 6;             %Refinement adjacency flooding iterations at the first refinement
 cm2dop.nrflood_f = 4;             %Refinement adjacency flooding iterations at the final refinement
@@ -68,7 +68,7 @@ cm2dop.adtree_spad = 0.0;         %Maximum padding size of adtree search boundin
 cm2dop.adtree_maxd = 4;           %AD tree maximum depth in terms of dimension cycles (tree is 4d)
 
 %Gradient linking options
-cm2dop.glink_con = 0;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
+cm2dop.glink_con = 1;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
 cm2dop.glink_nnn = 10;            %Number of nearest neighbours to use for volume to surface gradient interpolation
 cm2dop.glink_nsmooth = 4;         %Number of vertices each side used to smooth the gradient at each surface vertex
 
@@ -150,7 +150,7 @@ patch('vertices',vtx,'faces',edge,'EdgeAlpha',1.0,'Marker','none');
 %Plot object surface 
 patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','none','EdgeColor',[0.1 0.1 1],'MarkerEdgeColor','b');
 % plot(vertices(:,1),vertices(:,2),'b.')
-% plot(vertices(322,1),vertices(322,2),'b.','markersize',20)
+% plot(vertices(360,1),vertices(360,2),'b.','markersize',20)
 
 %Plot boundary conditions 
 for ii=1:Nedge

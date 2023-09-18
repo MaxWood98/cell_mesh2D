@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 5.6
-!Updated 05-09-2023
+!Version 5.7
+!Updated 18-09-2023
 
 !Module
 module cellmesh2d_io_mod
@@ -237,11 +237,13 @@ read(11,*) surface_mesh%nvtx,surface_mesh%nfcs
 !Allocate
 allocate(surface_mesh%vertices(surface_mesh%nvtx,2))
 allocate(surface_mesh%faces(surface_mesh%nfcs,2))
+allocate(surface_mesh%vtx_active(surface_mesh%nvtx))
 
 !Import surface verticies
 do ii=1,surface_mesh%nvtx
     read(11,*) surface_mesh%vertices(ii,:) !x || y
 end do
+surface_mesh%vtx_active(:) = 1
 
 !Import surface faces
 do ii=1,surface_mesh%nfcs
@@ -483,20 +485,20 @@ do vv=1,surface_mesh%nvtx
     end do 
     write(11,'(A)') !skip to next line 
     do ii=1,2*cm2dopt%glink_nsmooth+1 !write RBF dependance for this surface point on each surface smoothing point
-        write(11,'(ES0.0,A)',advance='no') volume_mesh%vsinterp(vv)%surf_smoothRBF(ii),' '
+        write(11,'(A,A)',advance='no') real2F0_Xstring(volume_mesh%vsinterp(vv)%surf_smoothRBF(ii),12_in),' '
     end do 
     write(11,'(A)') !skip to next line 
     do ii=1,cm2dopt%glink_nnn !write volume point list for this surface point 
         write(11,'(I0,A)',advance='no') volume_mesh%vsinterp(vv)%vol_pnts(ii),' '
     end do 
     write(11,'(A)') !skip to next line 
-    do ii=1,cm2dopt%glink_nnn !write RBF dependance for this surface point on each volume point
-        write(11,'(ES0.0,A)',advance='no') volume_mesh%vsinterp(vv)%surf2volRBF(ii),' '
+    do ii=1,cm2dopt%glink_nnn !write RBF dependance for this surface point on each volume point 
+        write(11,'(A,A)',advance='no') real2F0_Xstring(volume_mesh%vsinterp(vv)%surf2volRBF(ii),12_in),' '
     end do 
     write(11,'(A)') !skip to next line 
     do ii=1,cm2dopt%glink_nnn !write interpolation matrix 
         do jj=1,cm2dopt%glink_nnn 
-            write(11,'(ES0.0,A)',advance='no') volume_mesh%vsinterp(vv)%Ri(ii,jj),' '
+            write(11,'(A,A)',advance='no') real2F0_Xstring(volume_mesh%vsinterp(vv)%Ri(ii,jj),12_in),' '
         end do 
         write(11,'(A)') !skip to next line
     end do 
@@ -517,13 +519,13 @@ end subroutine export_vs2s_interpstruc
 
 
 !Export TECPLOT mesh file with cell data subroutine =========================  
-subroutine write_cell_dataPLT(filename,volume_mesh,cell_data)
+subroutine write_cell_dataPLT(filename,volume_mesh,cell_datap)
 use ieee_arithmetic
 implicit none 
 
 
 !Variables - Import
-real(dp), dimension(:) :: cell_data
+real(dp), dimension(:) :: cell_datap
 character(*), intent(in) :: filename
 type(vol_mesh_data) :: volume_mesh
 
@@ -549,7 +551,7 @@ write(fh,*) 'TotalNumBoundaryConnections=0 '
 nperline = 100
 write(fh,*) ( volume_mesh%vertices(i:min(i+nperline-1,volume_mesh%nvtx),1),NEW_LINE('A') , i=1,volume_mesh%nvtx,nperline )
 write(fh,*) ( volume_mesh%vertices(i:min(i+nperline-1,volume_mesh%nvtx),2),NEW_LINE('A') , i=1,volume_mesh%nvtx,nperline )
-write(fh,*) ( cell_data(i:min(i+nperline-1,volume_mesh%ncell)),NEW_LINE('A') , i=1,volume_mesh%ncell,nperline )
+write(fh,*) ( cell_datap(i:min(i+nperline-1,volume_mesh%ncell)),NEW_LINE('A') , i=1,volume_mesh%ncell,nperline )
 do i=1,volume_mesh%nedge
     write(fh,*) volume_mesh%edge(i,1),volume_mesh%edge(i,2)  
 end do

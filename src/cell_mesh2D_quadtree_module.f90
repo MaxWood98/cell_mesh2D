@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.2.1
-!Updated 15-08-2023
+!Version 0.2.2
+!Updated 18-09-2023
 
 !Module
 module cellmesh2d_quadtree_mod
@@ -228,6 +228,9 @@ do rr=1,cm2dopt%Nrefine + cm2dopt%NrefineB
     do cc=1,cins-1
         if (Qrefine(cc) == 1) then
             call quadtree_cell_refine(qt_mesh,cm2dopt,eopposite,edges,ccadj,vins,cins,cc)
+            if (cm2dopt%cm2dfailure == 1) then 
+                return 
+            end if 
         end if 
     end do 
 
@@ -676,7 +679,7 @@ integer(in), dimension(:), allocatable :: cell_keep,vtx_external,vtx_type1
 
 !Variables - Local 
 integer(in) :: cc,ee,nn,kk,ii,aa,vv
-integer(in) :: Npert,nselected,Noverlap,v1,v2,segval,edgenew,intnew,segselect,edgetgt,stransstat,cadj
+integer(in) :: Npert,nselected,Noverlap,v1,v2,segval,edgenew,intnew,segselect,edgetgt,stransstat,cadj,NVpertTs,NVpertTm
 integer(in) :: Nfront,NfrontN,Nexternal,Ninternal,cellC,cellA,etgt_op,Nflooditer,ctgt_adj,etgt_adj,Nsubcedge_vtx
 integer(in) :: eopposite(4),cell_nc(qt_mesh%cins-1),node_select(surface_adtree%nnode),subcedge_vtx(cm2dopt%NintEmax)
 integer(in) :: frontC(qt_mesh%cins-1),frontN(qt_mesh%cins-1),cell_external_base(qt_mesh%cins-1)
@@ -723,17 +726,37 @@ end do
 
 !Display 
 if (cm2dopt%dispt == 1) then
-    write(*,'(A)') '--> tie-breaking vertices that lie on geometry surfaces'
+    write(*,'(A)') '--> tie-breaking edge co-incident vertices'
 end if
 
-!Perturb vertices that lie exactly on geometry surfaces 
-do cc=1,5
-    call perturb_vertices_on_surfaces(Npert,qt_mesh,surface_mesh,cell_nc,surface_adtree,cm2dopt) 
+!Perturb geometry vertices that may lie exactly on a mesh edge 
+NVpertTs = 0 
+do cc=1,10
+    call perturb_svertices_on_edges(Npert,qt_mesh,surface_mesh,cell_nc,surface_adtree,cm2dopt) 
+    NVpertTs = NVpertTs + Npert
     !print *, Npert
     if (Npert == 0) then 
         exit 
     end if 
 end do 
+
+
+!Perturb mesh vertices that lie exactly on geometry surfaces 
+NVpertTm = 0 
+do cc=1,10
+    call perturb_mvertices_on_surfaces(Npert,qt_mesh,surface_mesh,cell_nc,surface_adtree,cm2dopt) 
+    NVpertTm = NVpertTm + Npert
+    !print *, Npert
+    if (Npert == 0) then 
+        exit 
+    end if 
+end do 
+
+!Display 
+if (cm2dopt%dispt == 1) then
+    write(*,'(A,I0,A)') '    {perturbed ',NVpertTs,' surface vertices}'
+    write(*,'(A,I0,A)') '    {perturbed ',NVpertTm,' mesh vertices}'
+end if
 
 !Display 
 if (cm2dopt%dispt == 1) then
@@ -807,6 +830,7 @@ do cc=1,qt_mesh%cins-1
                             !If potential intersection
                             segval = seg_seg_intersect_bool(vl1,vl2,ve1,ve2)
                             if (segval .NE. 0) then !Only select where intersection is properly defined and there is a defined crossing point (dont need to find all cases here but must be correct)
+                            ! if (segval == 1) then
 
                                 !Find intersection location (is within edge and segment here)
                                 vint = line_line_intersection_loc_inl1(ve1,ve2,vl1,vl2)
@@ -1082,8 +1106,8 @@ end subroutine quadtree_mesh_trim2geom
 
 
 
-!Surface cooincident vertex perturbation subroutine ===========================
-subroutine perturb_vertices_on_surfaces(Npert,qt_mesh,surface_mesh,cell_nc,surface_adtree,cm2dopt) 
+!Subroutine to perturb volume mesh vertices that lie exactly on surface mesh edges ===========================
+subroutine perturb_mvertices_on_surfaces(Npert,qt_mesh,surface_mesh,cell_nc,surface_adtree,cm2dopt) 
 use ieee_arithmetic
 implicit none 
 
@@ -1104,7 +1128,7 @@ real(dp) :: cpadSZ,surf_tol,zxmin,zxmax,zymin,zymax,zzmin,zzmax
 real(dp) :: vtxb(2),vl1(2),vl2(2),segnorm(2),vid(3)
 
 !Set proximity tollerance as fraction of cell size
-surf_tol = 2.0d0*cm2dopt%intcointol 
+surf_tol = 10.0d0*cm2dopt%intcointol 
 
 !Check and perturb vertices 
 zxmin = 0.0d0 
@@ -1116,7 +1140,7 @@ zzmax = 0.0d0
 nselected = 0  
 node_select(:) = 0 
 vtx_updated(:) = 0 
-!open(11,file=cm2dopt%iopath//'vtx2pert.dat')
+! open(11,file=cm2dopt%iopath//'vtx2pert')
 do cc=1,qt_mesh%cins-1
     if (cell_nc(cc) == 1) then 
         
@@ -1194,12 +1218,142 @@ do cc=1,qt_mesh%cins-1
         end do 
     end if 
 end do 
-!close(11)
+! close(11)
 
 !Set number of updated vertices 
 Npert = sum(vtx_updated(:))
 return 
-end subroutine perturb_vertices_on_surfaces
+end subroutine perturb_mvertices_on_surfaces
+
+
+
+
+!Subroutine to perturb surface mesh vertices that lie exactly on volume mesh edges ===========================
+subroutine perturb_svertices_on_edges(Npert,qt_mesh,surface_mesh,cell_nc,surface_adtree,cm2dopt) 
+use ieee_arithmetic
+implicit none 
+
+!System data
+type(quadtree_data) :: qt_mesh
+type(surface_data) :: surface_mesh
+type(cm2d_options) :: cm2dopt
+type(tree_data) :: surface_adtree
+
+!Variables - Import
+integer(in) :: Npert
+integer(in) :: cell_nc(qt_mesh%cins-1)
+
+!Variables - Local 
+integer(in) :: cc,ee,nn,kk,nselected,v1,v2,vs1,vs2
+integer(in) :: node_select(surface_adtree%nnode),vtx_updated(surface_mesh%nvtx)
+integer(in) :: celledges(4,2)
+real(dp) :: cpadSZ,surf_tol,zxmin,zxmax,zymin,zymax,zzmin,zzmax
+real(dp) :: vl1(2),vl2(2),vm1(2),vm2(2),segnorm(2),vid(3)
+
+!Define cell edges 
+celledges(1,1) = 1
+celledges(1,2) = 2
+celledges(2,1) = 2
+celledges(2,2) = 3
+celledges(3,1) = 3
+celledges(3,2) = 4
+celledges(4,1) = 4
+celledges(4,2) = 1
+
+!Set proximity tollerance as fraction of cell size
+surf_tol = 10.0d0*cm2dopt%intcointol 
+
+!Check and perturb vertices 
+zxmin = 0.0d0 
+zxmax = 0.0d0 
+zymin = 0.0d0 
+zymax = 0.0d0 
+zzmin = 0.0d0 
+zzmax = 0.0d0
+nselected = 0  
+node_select(:) = 0 
+vtx_updated(:) = 0 
+! open(11,file=cm2dopt%iopath//'vtx2pert.dat')
+do cc=1,qt_mesh%cins-1
+    if (cell_nc(cc) == 1) then 
+        
+        !Padding size 
+        cpadSZ = 2.0d0*cm2dopt%far_field_bound/(2.0d0**(qt_mesh%cell_level(cc) - 1))
+
+        !Intersection bounding box
+        zxmin = qt_mesh%vtx(qt_mesh%cell_vcnr(cc,1),1) - cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> xmin
+        zxmax = qt_mesh%vtx(qt_mesh%cell_vcnr(cc,3),1) + cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> xmax
+        zymin = qt_mesh%vtx(qt_mesh%cell_vcnr(cc,1),2) - cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> ymin
+        zymax = qt_mesh%vtx(qt_mesh%cell_vcnr(cc,3),2) + cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> ymax
+
+        !Identify any segment bounding boxes that may overlap the cell 
+        call search_ADtree(nselected,node_select,surface_adtree,zxmin,zxmax,zymin,zymax,zzmin,zzmax)
+
+        !Check surface vertices near here for proximity to each edge on this cell 
+        if (nselected .GT. 0) then 
+            do ee=1,4
+
+                !Mesh edge vertices
+                v1 = qt_mesh%cell_vcnr(cc,celledges(ee,1))
+                v2 = qt_mesh%cell_vcnr(cc,celledges(ee,2))
+                vm1(:) = qt_mesh%vtx(v1,:)
+                vm2(:) = qt_mesh%vtx(v2,:)
+
+                !Mesh edge normal
+                segnorm(1) = vm1(2) - vm2(2)
+                segnorm(2) = vm2(1) - vm1(1)
+
+                !All selected surface segments 
+                do nn=1,nselected
+                    do kk=1,surface_adtree%tree(node_select(nn))%nentry
+
+                        !Verticies on the ends of the surface segment 
+                        vs1 = surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),1)
+                        vs2 = surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),2)
+                        vl1(:) = surface_mesh%vertices(vs1,:)
+                        vl2(:) = surface_mesh%vertices(vs2,:)
+
+                        !Check if vertex vs1 is close to this segment 
+                        vid = min_dist_point_to_edge(vm1,vm2,vl1)
+
+                        !If vertex is within tollerance then perturb
+                        if (vid(3) .LE. surf_tol*cpadSZ) then 
+                            vtx_updated(vs1) = 1
+                            if (norm2(segnorm(:)) .NE. 0.0d0) then
+                                surface_mesh%vertices(vs1,:) = surface_mesh%vertices(vs1,:) - &
+                                (segnorm(:)/norm2(segnorm(:)))*cpadSZ*surf_tol
+                            else
+    
+                            end if 
+                            ! write(11,*) surface_mesh%vertices(vs1,:)
+                        end if 
+
+                        !Check if vertex vs2 is close to this segment 
+                        vid = min_dist_point_to_edge(vm1,vm2,vl2)
+
+                        !If vertex is within tollerance then perturb
+                        if (vid(3) .LE. surf_tol*cpadSZ) then 
+                            vtx_updated(vs2) = 1
+                            if (norm2(segnorm(:)) .NE. 0.0d0) then
+                                surface_mesh%vertices(vs2,:) = surface_mesh%vertices(vs2,:) - &
+                                (segnorm(:)/norm2(segnorm(:)))*cpadSZ*surf_tol
+                            else
+    
+                            end if 
+                            ! write(11,*) surface_mesh%vertices(vs2,:)
+                        end if 
+                    end do 
+                end do 
+            end do 
+        end if 
+    end if
+end do 
+! close(11)
+
+!Set number of updated vertices 
+Npert = sum(vtx_updated(:))
+return 
+end subroutine perturb_svertices_on_edges
 
 
 
