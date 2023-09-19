@@ -587,7 +587,7 @@ frmt = frmt//')'
 frmt = '(F0.'//frmt
 
 !Allocate initial character
-allocate(character(len=2*X) :: str_I)
+allocate(character(len=4*X) :: str_I)
 
 !Write data to return charachter
 write(str_I,frmt) val

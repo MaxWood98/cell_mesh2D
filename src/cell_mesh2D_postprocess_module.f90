@@ -2808,13 +2808,11 @@ volume_mesh%cell_level(:) = 0
 volume_mesh%nedge = Nenew
 volume_mesh%nvtx = Nvnew
 volume_mesh%ncell = Ncnew
-
 ! open(11,file='io/vtxtest.dat')
 ! do vv=1,Nvnew
 !     write(11,*) vertices_new(vv,:)
 ! end do 
 ! close(11)
-
 return 
 end subroutine construct_dual_mesh
 

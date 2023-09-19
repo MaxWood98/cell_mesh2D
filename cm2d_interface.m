@@ -330,18 +330,18 @@ end
 
 
 
-% for ii=1:Nedge
-%     etgt = ii;
-%     if cell_lr(etgt,1) < 0 
-%         v1 = edge(etgt,1);
-%         v2 = edge(etgt,2);
-%         emidx = 0.5*(vtx(v1,1) + vtx(v2,1));
-%         emidy = 0.5*(vtx(v1,2) + vtx(v2,2));
-%         dx = vtx(v2,1) - vtx(v1,1);
-%         dy = vtx(v2,2) - vtx(v1,2);
-%         plot([emidx emidx+dy],[emidy emidy-dx],'r','linewidth',2)
-%     end
-% end
+for ii=1:Nedge
+    etgt = ii;
+    if cell_lr(etgt,1) < 0 
+        v1 = edge(etgt,1);
+        v2 = edge(etgt,2);
+        emidx = 0.5*(vtx(v1,1) + vtx(v2,1));
+        emidy = 0.5*(vtx(v1,2) + vtx(v2,2));
+        dx = vtx(v2,1) - vtx(v1,1);
+        dy = vtx(v2,2) - vtx(v1,2);
+        plot([emidx emidx+dy],[emidy emidy-dx],'r','linewidth',2)
+    end
+end
 
 
 %Debug plots ==============================================================
