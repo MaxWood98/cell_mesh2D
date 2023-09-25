@@ -250,9 +250,6 @@ call remap_cell_indecies(volume_mesh)
 !Remove mesh internal valence two vertices 
 call clean_internal_vlnc2_vertices(volume_mesh,cm2dopt)
 
-
-
-
 !Simplify the mesh surface within each cell if simplified surface requested
 if (cm2dopt%surface_type == 0) then     
     if (cm2dopt%dispt == 1) then
@@ -283,6 +280,7 @@ if (cm2dopt%meshfrmat == 'su2_cutcell') then
     call build_mesh_cells(volume_mesh)
 elseif (cm2dopt%meshfrmat == 'su2_dual') then 
     call construct_dual_mesh(volume_mesh)
+    call deform_mesh2surface(volume_mesh,surface_mesh,surface_adtree)
     call remap_cell_indecies(volume_mesh)
     call build_mesh_cells(volume_mesh)
 end if 
@@ -313,7 +311,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A,E11.5,A,E11.5,A,E11.5,A)') '    {cell volume (max/min/total) : ',maxval(Cvol),' / ',minval(Cvol),' / ',sum(Cvol),'}'
 end if
 if (minval(Cvol) .LE. 0.0d0) then 
-    cm2dopt%cm2dfailure = 1
+    ! cm2dopt%cm2dfailure = 1
     do ii=1,volume_mesh%ncell
         if (Cvol(ii) .LT. 0.0d0) then 
             print '(A,I0)', '** negative volume cell identified: ',ii

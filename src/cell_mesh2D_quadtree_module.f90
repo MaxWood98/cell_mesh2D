@@ -8,7 +8,7 @@
 !Module
 module cellmesh2d_quadtree_mod
 use cellmesh2d_adtree_mod
-use cellmesh2d_geometry_mod
+use cellmesh2d_surface_mod
 contains 
 
 
@@ -602,23 +602,23 @@ do nn=1,nselected
             curv_valid = 0 
         end if 
 
-        ! !Check if either vertex is within the cell and has a surface radius of curvature smaller than the cell size
-        ! if ((vl1(1) .GE. xmin) .AND. (vl1(1) .LE. xmax)) then 
-        !     if ((vl1(2) .GE. ymin) .AND. (vl1(2) .LE. ymax)) then 
-        !         sRcurv = surface_mesh%vtx_rcurv(surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),1))
-        !         if (sRcurv .LE. reflen) then 
-        !             curv_valid = 1
-        !         end if 
-        !     end if 
-        ! end if 
-        ! if ((vl2(1) .GE. xmin) .AND. (vl2(1) .LE. xmax)) then 
-        !     if ((vl2(2) .GE. ymin) .AND. (vl2(2) .LE. ymax)) then 
-        !         sRcurv = surface_mesh%vtx_rcurv(surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),2))
-        !         if (sRcurv .LE. reflen) then 
-        !             curv_valid = 1
-        !         end if 
-        !     end if 
-        ! end if 
+        !Check if either vertex is within the cell and has a surface radius of curvature smaller than the cell size
+        if ((vl1(1) .GE. xmin) .AND. (vl1(1) .LE. xmax)) then 
+            if ((vl1(2) .GE. ymin) .AND. (vl1(2) .LE. ymax)) then 
+                sRcurv = surface_mesh%vtx_rcurv(surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),1))
+                if (sRcurv .LE. reflen) then 
+                    curv_valid = 1
+                end if 
+            end if 
+        end if 
+        if ((vl2(1) .GE. xmin) .AND. (vl2(1) .LE. xmax)) then 
+            if ((vl2(2) .GE. ymin) .AND. (vl2(2) .LE. ymax)) then 
+                sRcurv = surface_mesh%vtx_rcurv(surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),2))
+                if (sRcurv .LE. reflen) then 
+                    curv_valid = 1
+                end if 
+            end if 
+        end if 
 
         !Exit if overlap found and curvature condition is met
         if ((exist .NE. 0) .AND. (curv_valid == 1)) then 

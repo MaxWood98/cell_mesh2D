@@ -22,19 +22,19 @@ cm2dop.meshtype = 0;              %Type of mesh (0 = cutcell | 1 = minD block me
 cm2dop.meshinout = 'out';         %Mesh inside or outside of geometry (default out)
 cm2dop.surface_dir = 'in';        %Surface normal direction switch in to / out of the mesh domain (default in)
 cm2dop.boundary_dir = 'in';       %Boundary normal direction switch in to / out of the mesh domain (default in)
-% cm2dop.meshfrmat = 'su2_dual';    %Mesh output format (flow2d / su2_cutcell / su2_dual)
-cm2dop.meshfrmat = 'flow2d';
+cm2dop.meshfrmat = 'su2_dual';    %Mesh output format (flow2d / su2_cutcell / su2_dual)
+% cm2dop.meshfrmat = 'flow2d';
 % cm2dop.meshfrmat = 'su2_cutcell';
 
 %Cut-Cell mesh options ====================================================
 %Quadtree options
 cm2dop.nrefine = 12;              %Maximum refinement level 
-cm2dop.nrefineB = 2;              %Maximum additional refinement levels in high curvature regions
+cm2dop.nrefineB = 3;              %Maximum additional refinement levels in high curvature regions
 cm2dop.ncell_max = 200000;        %Maximum number of cells
 cm2dop.nrflood_i = 6;             %Refinement adjacency flooding iterations at the first refinement
 cm2dop.nrflood_f = 4;             %Refinement adjacency flooding iterations at the final refinement
-cm2dop.nrflood_b = 3;             %Refinement adjacency flooding iterations on boosted refinement
-cm2dop.fbound = 15;               %Far field distance from object centre  
+cm2dop.nrflood_b = 2;             %Refinement adjacency flooding iterations on boosted refinement
+cm2dop.fbound = 12;               %Far field distance from object centre  
 cm2dop.coffset = [0.0 0.0];       %Object/mesh centre offset (x / y)
 
 %Custom domain bound specification 
@@ -68,7 +68,7 @@ cm2dop.adtree_spad = 0.0;         %Maximum padding size of adtree search boundin
 cm2dop.adtree_maxd = 4;           %AD tree maximum depth in terms of dimension cycles (tree is 4d)
 
 %Gradient linking options
-cm2dop.glink_con = 1;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
+cm2dop.glink_con = 0;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
 cm2dop.glink_nnn = 10;            %Number of nearest neighbours to use for volume to surface gradient interpolation
 cm2dop.glink_nsmooth = 4;         %Number of vertices each side used to smooth the gradient at each surface vertex
 
@@ -155,7 +155,7 @@ patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','none','
 %Plot boundary conditions 
 for ii=1:Nedge
     if cell_lr(ii,1) == -1 %wall
-        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
+        % patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
     elseif cell_lr(ii,1) == -2 %far field
         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','b');
     elseif cell_lr(ii,1) == -3 || cell_lr(ii,1) == -5 || cell_lr(ii,1) == -6 %inflow
@@ -305,14 +305,14 @@ end
 
 % interp_curve = load('io/interp_curve.dat');
 % plot(interp_curve(:,1),interp_curve(:,2),'r','linewidth',2)
-% 
+
 % vbase = load('io/interp_curve_vbase.dat');
 % plot(vertices(vbase(:),1),vertices(vbase(:),2),'g.','markersize',15)
 
 % vtgt = 21;
 % plot(vertices(vbase(vtgt),1),vertices(vbase(vtgt),2),'b.','markersize',15)
 
-% ctgt = 3062;
+% ctgt = 7477;
 % for ii=1:Nedge
 %     etgt = ii;
 %     if cell_lr(etgt,1) == ctgt || cell_lr(etgt,2) == ctgt 
@@ -320,28 +320,27 @@ end
 %         v1 = edge(etgt,1);
 %         v2 = edge(etgt,2);
 %         plot([vtx(v1,1) vtx(v2,1)],[vtx(v1,2) vtx(v2,2)],'r','linewidth',2)
+%         plot([vtx(v1,1) vtx(v2,1)],[vtx(v1,2) vtx(v2,2)],'ro','markersize',20)
 %     end
 % end
 
 
 % verticesT = load('io/vtxtest.dat');
 % plot(verticesT(:,1),verticesT(:,2),'r.')
-% 
 
 
-
-for ii=1:Nedge
-    etgt = ii;
-    if cell_lr(etgt,1) < 0 
-        v1 = edge(etgt,1);
-        v2 = edge(etgt,2);
-        emidx = 0.5*(vtx(v1,1) + vtx(v2,1));
-        emidy = 0.5*(vtx(v1,2) + vtx(v2,2));
-        dx = vtx(v2,1) - vtx(v1,1);
-        dy = vtx(v2,2) - vtx(v1,2);
-        plot([emidx emidx+dy],[emidy emidy-dx],'r','linewidth',2)
-    end
-end
+% for ii=1:Nedge
+%     etgt = ii;
+%     if cell_lr(etgt,1) < 0 
+%         v1 = edge(etgt,1);
+%         v2 = edge(etgt,2);
+%         emidx = 0.5*(vtx(v1,1) + vtx(v2,1));
+%         emidy = 0.5*(vtx(v1,2) + vtx(v2,2));
+%         dx = vtx(v2,1) - vtx(v1,1);
+%         dy = vtx(v2,2) - vtx(v1,2);
+%         plot([emidx emidx+dy],[emidy emidy-dx],'r','linewidth',2)
+%     end
+% end
 
 
 %Debug plots ==============================================================
@@ -354,6 +353,8 @@ xlabel('x')
 ylabel('y')
 hold off
 
-% axis([-0.9789   -0.9747   -0.0020    0.0022]);
-
-
+% axis([0.0240    0.0401   -0.0082    0.0079]);
+% axis([0.0283    0.0300   -0.0008    0.0008]);
+% axis([0.9982    1.0010   -0.0015    0.0013]);
+% axis([0.9992    1.0005   -0.0007    0.0006]);
+axis([0.9790    1.0194   -0.0232    0.0172]);

@@ -2475,10 +2475,9 @@ type(vol_mesh_data) :: volume_mesh
 
 !Variables - Local 
 integer(in) :: vv,ee,cc 
-integer(in) :: v1,v2,c3,c4,e1,e2,bc1,bc2,bcnew,Ncnew,Nvnew,Nenew,maxcedge,etgt,is_surfcell,Nvcell,exist 
+integer(in) :: v1,v2,c3,c4,e1,e2,bc1,bc2,bcnew,Ncnew,Nvnew,Nenew,maxcedge
 integer(in) :: cell_vtxidx(volume_mesh%ncell),edge_vtxidx(volume_mesh%nedge),vtx_cidx(volume_mesh%nvtx),vtx_vidx(volume_mesh%nvtx)
 integer(in) :: vtx_bndry(volume_mesh%nvtx),vtx_onesurf(volume_mesh%nvtx),nedge_cell(volume_mesh%ncell)
-integer(in) :: vtx_on_cell(volume_mesh%nvtx)
 integer(in) :: edge_new(2*volume_mesh%nedge,4),V2E(volume_mesh%nvtx,2)
 integer(in), dimension(:,:), allocatable :: cell2edge
 real(dp) :: emx,emy,ledge
@@ -2607,100 +2606,30 @@ do vv=1,volume_mesh%nvtx
 end do 
 
 !Build new vertices in current cells and edge midpoints 
-cvtx_new_weight(:) = 0.0d0 
 cvtx_new(:,:) = 0.0d0 
 evtx_new(:,:) = 0.0d0 
+cvtx_new_weight(:) = 0.0d0 
 do ee=1,volume_mesh%nedge
     c3 = volume_mesh%edge(ee,3)
     c4 = volume_mesh%edge(ee,4)
     emx = 0.5d0*(volume_mesh%vertices(volume_mesh%edge(ee,1),1) + volume_mesh%vertices(volume_mesh%edge(ee,2),1))
     emy = 0.5d0*(volume_mesh%vertices(volume_mesh%edge(ee,1),2) + volume_mesh%vertices(volume_mesh%edge(ee,2),2))
-    ledge = norm2(volume_mesh%vertices(volume_mesh%edge(ee,2),:) + volume_mesh%vertices(volume_mesh%edge(ee,1),:))
-    if ((c3 .NE. -1) .AND. (c4 .NE. -1)) then
-        evtx_new(ee,1) = emx 
-        evtx_new(ee,2) = emy 
-        if (c3 .GT. 0) then 
-            cvtx_new(c3,1) = cvtx_new(c3,1) + emx*ledge
-            cvtx_new(c3,2) = cvtx_new(c3,2) + emy*ledge
-            cvtx_new_weight(c3) = cvtx_new_weight(c3) + ledge
-        end if 
-        if (c4 .GT. 0) then 
-            cvtx_new(c4,1) = cvtx_new(c4,1) + emx*ledge
-            cvtx_new(c4,2) = cvtx_new(c4,2) + emy*ledge
-            cvtx_new_weight(c4) = cvtx_new_weight(c4) + ledge
-        end if 
-    elseif ((c3 == -1) .OR. (c4 == -1)) then
-        evtx_new(ee,:) = volume_mesh%edge_midpoint(ee,:) 
-    end if
+    ledge = norm2(volume_mesh%vertices(volume_mesh%edge(ee,2),:) - volume_mesh%vertices(volume_mesh%edge(ee,1),:))
+    evtx_new(ee,1) = emx 
+    evtx_new(ee,2) = emy 
+    if (c3 .GT. 0) then 
+        cvtx_new(c3,1) = cvtx_new(c3,1) + emx*ledge
+        cvtx_new(c3,2) = cvtx_new(c3,2) + emy*ledge
+        cvtx_new_weight(c3) = cvtx_new_weight(c3) + ledge
+    end if 
+    if (c4 .GT. 0) then 
+        cvtx_new(c4,1) = cvtx_new(c4,1) + emx*ledge
+        cvtx_new(c4,2) = cvtx_new(c4,2) + emy*ledge
+        cvtx_new_weight(c4) = cvtx_new_weight(c4) + ledge
+    end if 
 end do 
 cvtx_new(:,1) = cvtx_new(:,1)/cvtx_new_weight(:)
 cvtx_new(:,2) = cvtx_new(:,2)/cvtx_new_weight(:)
-
-!For surface cells bias vertices towards any vertices in the cell not connected to a surface edge 
-vtx_on_cell(:) = 0 
-do cc=1,volume_mesh%ncell
-
-    !Check if a surface cell 
-    is_surfcell = 0 
-    do ee=1,nedge_cell(cc)
-        etgt = cell2edge(cc,ee)
-        c3 = volume_mesh%edge(etgt,3)
-        c4 = volume_mesh%edge(etgt,4)
-        if ((c3 == -1) .OR. (c4 == -1)) then
-            is_surfcell = 1
-            exit 
-        end if 
-    end do 
-
-    !If surface cell then process
-    if (is_surfcell == 1) then  
-
-        !Build list of off surface edge vertices on this cell 
-        Nvcell = 0 
-        do ee=1,nedge_cell(cc)
-            etgt = cell2edge(cc,ee)
-            v1 = volume_mesh%edge(etgt,1)
-            v2 = volume_mesh%edge(etgt,2)
-            if (vtx_onesurf(v1) == 0) then 
-                exist = 0 
-                do vv=1,Nvcell
-                    if (vtx_on_cell(vv) == v1) then 
-                        exist = 1
-                        exit 
-                    end if 
-                end do 
-                if (exist == 0) then 
-                    Nvcell = Nvcell + 1
-                    vtx_on_cell(Nvcell) = v1 
-                end if 
-            end if 
-            if (vtx_onesurf(v2) == 0) then 
-                exist = 0 
-                do vv=1,Nvcell
-                    if (vtx_on_cell(vv) == v2) then 
-                        exist = 1
-                        exit 
-                    end if 
-                end do 
-                if (exist == 0) then 
-                    Nvcell = Nvcell + 1
-                    vtx_on_cell(Nvcell) = v2 
-                end if
-            end if 
-        end do 
-
-        !Update this cells vertex location 
-        if (Nvcell .GT. 0) then 
-            emx = sum(volume_mesh%vertices(vtx_on_cell(1:Nvcell),1))/real(Nvcell,dp)
-            emy = sum(volume_mesh%vertices(vtx_on_cell(1:Nvcell),2))/real(Nvcell,dp)
-            cvtx_new(cc,1) = (cvtx_new(cc,1)*0.5d0 + emx*0.5d0)
-            cvtx_new(cc,2) = (cvtx_new(cc,2)*0.5d0 + emy*0.5d0)
-        end if 
-
-        !Reset vertices on cell 
-        vtx_on_cell(1:Nvcell) = 0 
-    end if 
-end do 
 
 !Build new vertex list 
 allocate(vertices_new(Nvnew,2))
@@ -2815,6 +2744,196 @@ volume_mesh%ncell = Ncnew
 ! close(11)
 return 
 end subroutine construct_dual_mesh
+
+
+
+
+!Deform mesh to surface subroutine ===========================
+subroutine deform_mesh2surface(volume_mesh,surface_mesh,surface_adtree)
+implicit none 
+
+!Variables - Import
+type(vol_mesh_data) :: volume_mesh
+type(surface_data) :: surface_mesh
+type(tree_data) :: surface_adtree
+
+!Variables - Local 
+integer(in) :: ee,vv,aa,nn,kk,ff
+integer(in) :: Nsurf_edge,etgt,maxvlnc,v1,v2,nselected
+integer(in) :: vtx_surface(volume_mesh%nvtx)
+integer(in) :: valence(volume_mesh%nvtx),node_select(surface_adtree%nnode)
+integer(in), dimension(:), allocatable :: vmsurf_edges
+integer(in), dimension(:,:), allocatable :: v2v
+real(dp) :: dx,dy,nnorm,xmin,ymin,xmax,ymax,rpad,rsup,normN,normC,adj_weight,adj_weightT,dref
+real(dp) :: zxmin,zxmax,zymin,zymax,zzmin,zzmax
+real(dp) :: vl1(2),vl2(2),np1(2),np2(2),vi(2),vic(2)
+real(dp) :: vtx_normal(volume_mesh%nvtx,2),vtx_deformation(volume_mesh%nvtx,2),vtx_deformationN(volume_mesh%nvtx,2)
+
+!Build mesh valence
+valence(:) = 0 
+do ee=1,volume_mesh%nedge
+    valence(volume_mesh%edge(ee,1:2)) = valence(volume_mesh%edge(ee,1:2)) + 1
+end do 
+maxvlnc = maxval(valence)
+
+!Build mesh v2v
+allocate(v2v(volume_mesh%nvtx,maxvlnc))
+v2v(:,:) = 0
+do ee=1,volume_mesh%nedge
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    do aa=1,maxvlnc
+        if (v2v(v1,aa) == 0) then 
+            v2v(v1,aa) = v2 
+            exit
+        end if 
+    end do 
+    do aa=1,maxvlnc
+        if (v2v(v2,aa) == 0) then 
+            v2v(v2,aa) = v1
+            exit
+        end if 
+    end do 
+end do 
+
+!Identify surface edges in the volume mesh
+Nsurf_edge = 0 
+do ee=1,volume_mesh%nedge
+    if ((volume_mesh%edge(ee,3) == -1) .OR. (volume_mesh%edge(ee,4) == -1)) then 
+        Nsurf_edge = Nsurf_edge + 1
+    end if 
+end do 
+allocate(vmsurf_edges(Nsurf_edge))
+Nsurf_edge = 0 
+do ee=1,volume_mesh%nedge
+    if ((volume_mesh%edge(ee,3) == -1) .OR. (volume_mesh%edge(ee,4) == -1)) then 
+        Nsurf_edge = Nsurf_edge + 1
+        vmsurf_edges(Nsurf_edge) = ee 
+    end if 
+end do 
+
+!Identify surface vertices
+vtx_surface(:) = 0 
+do ee=1,Nsurf_edge
+    etgt = vmsurf_edges(ee)
+    vtx_surface(volume_mesh%edge(etgt,1:2)) = 1 
+end do 
+
+!Find surface normal directions in the volume mesh surface at each vertex
+vtx_normal(:,:) = 0.0d0 
+do ee=1,Nsurf_edge
+    etgt = vmsurf_edges(ee)
+    dx = volume_mesh%vertices(volume_mesh%edge(etgt,2),1) - volume_mesh%vertices(volume_mesh%edge(etgt,1),1)
+    dy = volume_mesh%vertices(volume_mesh%edge(etgt,2),2) - volume_mesh%vertices(volume_mesh%edge(etgt,1),2)
+    vtx_normal(volume_mesh%edge(etgt,1),1) = vtx_normal(volume_mesh%edge(etgt,1),1) + dy
+    vtx_normal(volume_mesh%edge(etgt,1),2) = vtx_normal(volume_mesh%edge(etgt,1),2) - dx
+    vtx_normal(volume_mesh%edge(etgt,2),1) = vtx_normal(volume_mesh%edge(etgt,2),1) + dy
+    vtx_normal(volume_mesh%edge(etgt,2),2) = vtx_normal(volume_mesh%edge(etgt,2),2) - dx
+end do 
+do vv=1,volume_mesh%nvtx
+    if (vtx_surface(vv) == 1) then 
+        nnorm = norm2(vtx_normal(vv,:))
+        if (nnorm .NE. 0.0d0) then 
+            vtx_normal(vv,:) = vtx_normal(vv,:)/nnorm
+        end if 
+    end if 
+end do 
+
+!Find surface mesh intersection and hence deformation for each surface vertex
+zzmin = 0.0d0 
+zzmax = 0.0d0 
+nselected = 0 
+node_select(:) = 0 
+vtx_deformation(:,:) = 0.0d0 
+do vv=1,volume_mesh%nvtx
+    if (vtx_surface(vv) == 1) then 
+
+        !Build search radius 
+        xmax = max(maxval(volume_mesh%vertices(v2v(vv,1:valence(vv)),1)),volume_mesh%vertices(vv,1))
+        ymax = max(maxval(volume_mesh%vertices(v2v(vv,1:valence(vv)),2)),volume_mesh%vertices(vv,2))
+        xmin = min(minval(volume_mesh%vertices(v2v(vv,1:valence(vv)),1)),volume_mesh%vertices(vv,1))
+        ymin = min(minval(volume_mesh%vertices(v2v(vv,1:valence(vv)),2)),volume_mesh%vertices(vv,2))
+        rpad = sqrt((xmax - xmin)**2 + (ymax - ymin)**2)
+
+        !Build padded zone 
+        zxmin = volume_mesh%vertices(vv,1) - rpad
+        zxmax = volume_mesh%vertices(vv,1) + rpad
+        zymin = volume_mesh%vertices(vv,2) - rpad
+        zymax = volume_mesh%vertices(vv,2) + rpad
+
+        !Build normal search line 
+        np1(:) = volume_mesh%vertices(vv,:) - rpad*vtx_normal(vv,:)
+        np2(:) = volume_mesh%vertices(vv,:) + rpad*vtx_normal(vv,:)
+
+        !Search for surface mesh items 
+        call search_ADtree(nselected,node_select,surface_adtree,zxmin,zxmax,zymin,zymax,zzmin,zzmax)
+
+        !If any found then search for closest intersection 
+        if (nselected .NE. 0) then 
+            vic(:) = ieee_value(1.0d0,IEEE_POSITIVE_INF)
+            do nn=1,nselected
+                do kk=1,surface_adtree%tree(node_select(nn))%nentry
+            
+                    !Verticies of the ends of the surface segment 
+                    vl1(:) = surface_mesh%vertices(surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),1),:)
+                    vl2(:) = surface_mesh%vertices(surface_mesh%faces(surface_adtree%tree(node_select(nn))%entry(kk),2),:)
+
+                    !Check for intersection 
+                    vi = line_line_intersection_loc_inl1(vl1,vl2,np1,np2)
+
+                    !If valid 
+                    if (.NOT.isnan(vi(1))) then 
+                        normN = sqrt((vi(1) - volume_mesh%vertices(vv,1))**2 + (vi(2) - volume_mesh%vertices(vv,2))**2)
+                        normC = sqrt((vic(1) - volume_mesh%vertices(vv,1))**2 + (vic(2) - volume_mesh%vertices(vv,2))**2)
+                        if (normN .LT. normC) then 
+                            vic = vi
+                        end if 
+                    end if 
+                end do 
+            end do 
+            if (.NOT.isnan(vic(1))) then 
+                vtx_deformation(vv,:) = vic(:) - volume_mesh%vertices(vv,:)
+            end if 
+        end if 
+    end if 
+end do 
+
+!Flood deformations through mesh 
+do ff=1,20
+    do vv=1,volume_mesh%nvtx
+        if (vtx_surface(vv) == 1) then !fixed surface deformation
+            vtx_deformationN(vv,:) = vtx_deformation(vv,:)
+        else !interpolated volume deformation 
+
+            !Build support radius 
+            xmax = max(maxval(volume_mesh%vertices(v2v(vv,1:valence(vv)),1)),volume_mesh%vertices(vv,1))
+            ymax = max(maxval(volume_mesh%vertices(v2v(vv,1:valence(vv)),2)),volume_mesh%vertices(vv,2))
+            xmin = min(minval(volume_mesh%vertices(v2v(vv,1:valence(vv)),1)),volume_mesh%vertices(vv,1))
+            ymin = min(minval(volume_mesh%vertices(v2v(vv,1:valence(vv)),2)),volume_mesh%vertices(vv,2))
+            rsup = 1.1d0*sqrt((xmax - xmin)**2 + (ymax - ymin)**2)
+
+            !Accumulate deformation 
+            adj_weightT = 0.0d0 
+            vtx_deformationN(vv,:) = 0.0d0 
+            do aa=1,valence(vv)
+                dref = norm2(volume_mesh%vertices(v2v(vv,aa),:) + vtx_deformation(v2v(vv,aa),:) - &
+                volume_mesh%vertices(vv,:) - vtx_deformation(vv,:))
+                adj_weight = wendlandc2(dref,rsup)
+                vtx_deformationN(vv,:) = vtx_deformationN(vv,:) + adj_weight*vtx_deformation(v2v(vv,aa),:)
+                adj_weightT = adj_weightT + adj_weight
+            end do 
+            if (adj_weightT .NE. 0.0d0) then 
+                vtx_deformationN(vv,:) = vtx_deformationN(vv,:)/adj_weightT
+            end if 
+        end if 
+    end do 
+    vtx_deformation(:,:) = vtx_deformationN(:,:)
+end do 
+
+!Snap mesh to the geometry surface 
+volume_mesh%vertices(:,:) = volume_mesh%vertices(:,:) + vtx_deformation(:,:)
+return 
+end subroutine deform_mesh2surface
 
 
 

@@ -3,3 +3,4 @@ io/
 obj/
 test/
 *.exe
+old/

@@ -211,6 +211,7 @@ end do
 do ff=1,surface_mesh%nfcs
     surface_mesh%face_rcurv(ff) = 0.5d0*(surface_mesh%vtx_rcurv(surface_mesh%faces(ff,1)) + &
     surface_mesh%vtx_rcurv(surface_mesh%faces(ff,2)))
+    ! print *, surface_mesh%face_rcurv(ff)
 end do 
 
 !Debug 

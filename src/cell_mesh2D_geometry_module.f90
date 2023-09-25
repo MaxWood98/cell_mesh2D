@@ -9,7 +9,7 @@
 module cellmesh2d_geometry_mod
 use cellmesh2d_adtree_mod
 use cellmesh2d_utilities_mod
-use ieee_arithmetic, only: ieee_value,IEEE_QUIET_NAN
+use ieee_arithmetic !, only: ieee_value,IEEE_QUIET_NAN
 contains
 
 
@@ -234,6 +234,49 @@ end function cp2dv
 
 
 
+!Outer angle function ===========================
+function outer_angle(v1,vp,v2) result(ang)
+implicit none 
+
+!Variables - Import
+real(dp) :: ang
+real(dp) :: v1(2),v2(2),vp(2)
+
+!Variables - Local 
+real(dp) :: cpval,cosang,pi
+real(dp) :: ve1(2),ve2(2)
+
+!Define pi
+pi = 4.0d0*atan(1.0d0)
+
+!Edge vectors 
+ve1(:) = vp(:) - v1(:)
+ve2(:) = vp(:) - v2(:)
+ve1(:) = ve1(:)/norm2(ve1(:))
+ve2(:) = ve2(:)/norm2(ve2(:))
+
+!Check convexity 
+cpval = cp2dv(ve1,ve2)
+
+!Construct angle 
+cosang = dot_product(ve1,ve2)
+if (cosang .GT. 1.0d0) then 
+    cosang = 1.0d0 
+elseif (cosang .LT. -1.0d0) then 
+    cosang = -1.0d0 
+end if 
+ang = acos(cosang)
+ang = ang*(180.0d0/pi)
+if (cpval .GT. 0.0d0) then 
+    ang = 360.0d0 - ang
+end if 
+ang = abs(ang)
+return 
+end function outer_angle
+
+
+
+
 !Line segment area contribution function ===========================
 function Asegment(v1,v2) result(Aseg) !+ve area for CCW oriented shapes
 implicit none 
@@ -399,6 +442,7 @@ real(dp) :: Rs,dx_ds,dy_ds,dx_ds_2,dy_ds_2,denom
 real(dp) :: s(Ninterp),sdelta(Ninterp)
 real(dp) :: vtx_l(Ninterp,2),Rd(Ninterp,Ninterp),Rdi(Ninterp,Ninterp)
 real(dp) :: gamma_x(Ninterp,1),gamma_y(Ninterp,1)
+! real(dp) :: spi,vpi(2)
 
 !Set interpolation point 
 interp_pnt = ((Ninterp - 1)/2) + 1
@@ -470,10 +514,11 @@ end if
 ! print *, 'Rcan = ',Rcurv
 
 !Test export debug -----
-! if (interp_stencil(interp_pnt) == 321) then 
+! if (interp_stencil(interp_pnt) == 120) then 
+!     print *,'Rcurv = ',Rcurv
 !     open(11,file='io/interp_curve.dat')
-!     do ii=1,100 
-!         spi = ((s(Ninterp) - s(1))/99)*real(ii-1,dp) + s(1)
+!     do ii=1,1000 
+!         spi = ((s(Ninterp) - s(1))/999)*real(ii-1,dp) + s(1)
 !         do jj=1,Ninterp
 !             sdelta(jj) = wendlandC2(abs(spi - s(jj)),Rs)
 !         end do
