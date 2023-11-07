@@ -29,7 +29,6 @@ type(vol_mesh_data) :: volume_mesh
 integer(in) :: ii
 
 !Object data
-integer(in) :: nrem
 real(dp) :: obj_max_x,obj_max_y,obj_min_x,obj_min_y,obj_cx,obj_cy
 real(dp), dimension(:,:), allocatable :: tvtx
 
@@ -45,20 +44,6 @@ type(tree_data) :: surface_adtree
 !Quadtree 
 integer(in), dimension(:), allocatable :: cell_keep,vtx_external,vtx_type1
 type(quadtree_data) :: qt_mesh
-
-!Initialisation -------------------------------------------------------
-if (cm2dopt%dispt == 1) then
-    write(*,'(A)') ' '
-    write(*,'(A)')'+--------------------------------------------+'
-    write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
-    write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.5.1 || 18/09/2023         |'
-    write(*,'(A)')'|                 Max Wood                   |'
-    write(*,'(A)')'|           University of Bristol            |'
-    write(*,'(A)')'|    Department of Aerospace Engineering     |'
-    write(*,'(A)')'+--------------------------------------------+'
-    write(*,'(A)') ' '
-end if
 
 !Set hardcoded parameters -------------------------------------------------------
 !Set MaxValence parameter (=4)
@@ -86,25 +71,11 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)') '--> constructing surface geometry parameters'
 end if
 
-!Clean surface mesh to remove zero length segments 
-do ii=1,10
-    call clean_surface(surface_mesh,cm2dopt,nrem)
-    if (nrem == 0) then 
-        exit 
-    end if 
-end do 
-
-!Orient surface mesh for positive object volume (this ensures normal vector convention is correct)
-call orient_surface(surface_mesh,cm2dopt)
-
-!Build v2f for surface geometry and check for non-manifold surface geometry 
-call construct_surface_v2f(surface_mesh,cm2dopt)
+!Preprocess surface mesh 
+call preprocess_surface_mesh(surface_mesh,cm2dopt)
 if (cm2dopt%cm2dfailure == 1) then
     return 
 end if 
-
-!Evaluate surface mesh segment curvature 
-call evaluate_surf_rcurv(surface_mesh,cm2dopt)
 
 !Global object bounds
 obj_max_x = maxval(surface_mesh%vertices(:,1))

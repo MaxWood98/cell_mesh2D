@@ -2,13 +2,50 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.4
-!Updated 15-09-2023
+!Version 0.5
+!Updated 07-11-2023
 
 !Module
 module cellmesh2d_surface_mod
 use cellmesh2d_geometry_mod
 contains 
+
+
+!Preprocess surface mesh subroutine ===========================
+subroutine preprocess_surface_mesh(surface_mesh,cm2dopt)
+implicit none 
+
+!Variables - Import
+type(cm2d_options) :: cm2dopt
+type(surface_data) :: surface_mesh
+
+!Variables - Local 
+integer(in) :: ii
+integer(in) :: nrem
+
+!Clean surface mesh to remove zero length segments 
+do ii=1,10
+    call clean_surface(surface_mesh,cm2dopt,nrem)
+    if (nrem == 0) then 
+        exit 
+    end if 
+end do 
+
+!Orient surface mesh for positive object volume (this ensures normal vector convention is correct)
+call orient_surface(surface_mesh,cm2dopt)
+
+!Build v2f for surface geometry and check for non-manifold surface geometry 
+call construct_surface_v2f(surface_mesh,cm2dopt)
+if (cm2dopt%cm2dfailure == 1) then
+    return 
+end if 
+
+!Evaluate surface mesh segment curvature 
+call evaluate_surf_rcurv(surface_mesh,cm2dopt)
+return 
+end subroutine preprocess_surface_mesh
+
+
 
 
 !Clean surface with retained vertex indexing subroutine ===========================

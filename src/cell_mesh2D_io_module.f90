@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 5.7
-!Updated 18-09-2023
+!Version 6.0
+!Updated 07-11-2023
 
 !Module
 module cellmesh2d_io_mod
@@ -21,36 +21,130 @@ type(cm2d_options) :: cm2dopt
 integer(in) :: nargs
 integer(in32) :: arglen,argstat
 
-!Check and process supplied command arguments
+!Check and process supplied command arguments 
 nargs = command_argument_count()
-if (nargs == 0) then !Use default paths and filename
+if (nargs == 0) then 
+    write(*,'(A)') '** at least one argument must be supplied [mode / surface name / io path / options path]'
+    stop
+elseif (nargs == 1) then !Use mode
+
+    !Read mode 
+    call get_command_argument(number=1, length=arglen)
+    allocate(character(len=arglen) :: cm2dopt%mode)
+    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
+
+    !Set default paths and surface name 
     allocate(character(len=3) :: cm2dopt%iopath)
     cm2dopt%iopath = 'io/'
     allocate(character(len=3) :: cm2dopt%optpath)
     cm2dopt%optpath = 'io/'
     allocate(character(len=23) :: cm2dopt%surfacename)
     cm2dopt%surfacename = 'cell_mesh2d_surface.dat'
-elseif (nargs == 1) then !Use default paths and specified filename
+elseif (nargs == 2) then !Use mode and surface name
+
+    !Read mode 
+    call get_command_argument(number=1, length=arglen)
+    allocate(character(len=arglen) :: cm2dopt%mode)
+    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
+
+    !Read surface name 
+    call get_command_argument(number=2, length=arglen)
+    allocate(character(len=arglen) :: cm2dopt%surfacename)
+    call get_command_argument(number=2, value=cm2dopt%surfacename, status=argstat)
+
+    !Set default paths
     allocate(character(len=3) :: cm2dopt%iopath)
     cm2dopt%iopath = 'io/'
     allocate(character(len=3) :: cm2dopt%optpath)
     cm2dopt%optpath = 'io/'
+elseif (nargs == 3) then !Use mode, surface name and io path
+
+    !Read mode 
     call get_command_argument(number=1, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%surfacename)
-    call get_command_argument(number=1, value=cm2dopt%surfacename, status=argstat)
-else !Use specified paths and filename 
-    call get_command_argument(number=1, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%surfacename)
-    call get_command_argument(number=1, value=cm2dopt%surfacename, status=argstat)
+    allocate(character(len=arglen) :: cm2dopt%mode)
+    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
+
+    !Read surface name 
     call get_command_argument(number=2, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%optpath)
-    call get_command_argument(number=2, value=cm2dopt%optpath, status=argstat)
+    allocate(character(len=arglen) :: cm2dopt%surfacename)
+    call get_command_argument(number=2, value=cm2dopt%surfacename, status=argstat)
+
+    !Read io path
     call get_command_argument(number=3, length=arglen)
     allocate(character(len=arglen) :: cm2dopt%iopath)
     call get_command_argument(number=3, value=cm2dopt%iopath, status=argstat)
+
+    !Set default options path
+    allocate(character(len=3) :: cm2dopt%optpath)
+    cm2dopt%optpath = 'io/'
+elseif (nargs == 4) then !Use mode, surface name, io path and options path
+
+    !Read mode 
+    call get_command_argument(number=1, length=arglen)
+    allocate(character(len=arglen) :: cm2dopt%mode)
+    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
+
+    !Read surface name 
+    call get_command_argument(number=2, length=arglen)
+    allocate(character(len=arglen) :: cm2dopt%surfacename)
+    call get_command_argument(number=2, value=cm2dopt%surfacename, status=argstat)
+
+    !Read io path
+    call get_command_argument(number=3, length=arglen)
+    allocate(character(len=arglen) :: cm2dopt%iopath)
+    call get_command_argument(number=3, value=cm2dopt%iopath, status=argstat)
+
+    !Read options path
+    call get_command_argument(number=4, length=arglen)
+    allocate(character(len=arglen) :: cm2dopt%optpath)
+    call get_command_argument(number=4, value=cm2dopt%optpath, status=argstat)
+else
+    write(*,'(A)') '** too many command arguments supplied'
+    stop
 end if 
 return 
 end subroutine get_process_arguments
+
+! subroutine get_process_arguments(cm2dopt)
+! implicit none
+
+! !Variables - Import
+! type(cm2d_options) :: cm2dopt
+    
+! !Variables - Local 
+! integer(in) :: nargs
+! integer(in32) :: arglen,argstat
+
+! !Check and process supplied command arguments
+! nargs = command_argument_count()
+! if (nargs == 0) then !Use default paths and filename
+!     allocate(character(len=3) :: cm2dopt%iopath)
+!     cm2dopt%iopath = 'io/'
+!     allocate(character(len=3) :: cm2dopt%optpath)
+!     cm2dopt%optpath = 'io/'
+!     allocate(character(len=23) :: cm2dopt%surfacename)
+!     cm2dopt%surfacename = 'cell_mesh2d_surface.dat'
+! elseif (nargs == 1) then !Use default paths and specified filename
+!     allocate(character(len=3) :: cm2dopt%iopath)
+!     cm2dopt%iopath = 'io/'
+!     allocate(character(len=3) :: cm2dopt%optpath)
+!     cm2dopt%optpath = 'io/'
+!     call get_command_argument(number=1, length=arglen)
+!     allocate(character(len=arglen) :: cm2dopt%surfacename)
+!     call get_command_argument(number=1, value=cm2dopt%surfacename, status=argstat)
+! else !Use specified paths and filename 
+!     call get_command_argument(number=1, length=arglen)
+!     allocate(character(len=arglen) :: cm2dopt%surfacename)
+!     call get_command_argument(number=1, value=cm2dopt%surfacename, status=argstat)
+!     call get_command_argument(number=2, length=arglen)
+!     allocate(character(len=arglen) :: cm2dopt%optpath)
+!     call get_command_argument(number=2, value=cm2dopt%optpath, status=argstat)
+!     call get_command_argument(number=3, length=arglen)
+!     allocate(character(len=arglen) :: cm2dopt%iopath)
+!     call get_command_argument(number=3, value=cm2dopt%iopath, status=argstat)
+! end if 
+! return 
+! end subroutine get_process_arguments
 
 
 
@@ -194,6 +288,9 @@ read(11,*) cm2dopt%glink_nnn
 read(11,*) !skip
 read(11,*) !skip
 read(11,*) cm2dopt%glink_nsmooth
+read(11,*) !skip
+read(11,*) !skip
+read(11,*) cm2dopt%RBF_relax
 
 read(11,*) !skip
 read(11,*) !skip
@@ -431,6 +528,117 @@ close(11)
 
 return 
 end subroutine export_volume_mesh_SU2
+
+
+
+
+!Import volume mesh subroutine ===========================
+subroutine import_volume_mesh_flow(volume_mesh,cm2dopt)
+implicit none 
+
+!Variables - Import
+type(cm2d_options) :: cm2dopt
+type(vol_mesh_data) :: volume_mesh
+
+!Variables - Local
+integer(in) :: ii,vidx
+
+!Open file 
+open(11,file=cm2dopt%iopath//'grid')
+
+!Read item quantities 
+read(11,*) volume_mesh%ncell,volume_mesh%nedge,volume_mesh%nvtx
+
+!Read mesh faces 
+allocate(volume_mesh%edge(volume_mesh%nedge,4))
+do ii=1,volume_mesh%nedge
+    read(11,*) volume_mesh%edge(ii,:)
+end do 
+
+!Read mesh vertices 
+allocate(volume_mesh%vertices(volume_mesh%nvtx,2))
+do ii=1,volume_mesh%nvtx
+    read(11,*) vidx,volume_mesh%vertices(ii,:)
+end do 
+
+!Close file 
+close(11)
+
+!Display
+if (cm2dopt%dispt == 1) then
+    write(*,'(A)') '    {complete}'
+end if
+return 
+end subroutine import_volume_mesh_flow
+
+
+
+
+!Import flow gradients subroutine ===========================
+subroutine import_flow_gradients(gradient_vol,volume_mesh,cm2dopt)
+implicit none 
+
+!Variables - Import
+real(dp), dimension(:,:), allocatable :: gradient_vol
+type(cm2d_options) :: cm2dopt
+type(vol_mesh_data) :: volume_mesh
+
+!Variables - Local
+integer(in) :: ii
+
+!Allocate gradient array 
+allocate(gradient_vol(volume_mesh%nvtx,2))
+
+!Open file 
+open(11,file=cm2dopt%iopath//'gradient.dat')
+
+!Read gradients 
+do ii=1,volume_mesh%nvtx
+    read(11,*) gradient_vol(ii,:)
+end do 
+
+!Close file 
+close(11)
+
+!Display
+if (cm2dopt%dispt == 1) then
+    write(*,'(A)') '    {complete}'
+end if
+return 
+end subroutine import_flow_gradients
+
+
+
+
+!Export surface gradients subroutine ===========================
+subroutine export_surface_gradients(gradient_surf,surface_mesh,cm2dopt)
+implicit none 
+
+!Variables - Import
+real(dp), dimension(:,:) :: gradient_surf
+type(cm2d_options) :: cm2dopt
+type(surface_data) :: surface_mesh
+
+!Variables - Local
+integer(in) :: ii
+
+!Open file 
+open(11,file=cm2dopt%iopath//'gradient_surf.dat')
+
+!Write gradients 
+do ii=1,surface_mesh%nvtx
+    write(11,'(A,A,A)') real2F0_Xstring(gradient_surf(ii,1),12_in),' ',real2F0_Xstring(gradient_surf(ii,2),12_in)
+end do 
+
+!Close file 
+close(11)
+
+!Display
+if (cm2dopt%dispt == 1) then
+    write(*,'(A)') '    {complete}'
+end if
+return 
+end subroutine export_surface_gradients
 
 
 

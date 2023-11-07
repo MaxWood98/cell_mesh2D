@@ -34,11 +34,11 @@ end type cell_data
 
 !Options data type
 type cm2d_options
-    character(len=:), allocatable :: iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshfrmat
+    character(len=:), allocatable :: mode,iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshfrmat
     integer(in) :: Nrefine,NrefineB,Ncell_max,Nrefine_flood_i,Nrefine_flood_f,Nrefine_flood_b,meshtype
     integer(in) :: dispt,NintEmax,glink_con,glink_nnn,glink_nsmooth,ADTmax_depth,nlpflood,nlpsmooth,set_mbounds
     integer(in) :: set_customBCs,remFFzones,remISzones,remNCzones,Nsstype,Nzone_cBC,NPsinterp,surface_type,cm2dfailure
-    real(dp) :: ADTpadding,far_field_bound,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y
+    real(dp) :: ADTpadding,far_field_bound,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y,RBF_relax
     real(dp) :: mxmin,mxmax,mymin,mymax
     integer(in), dimension(:), allocatable :: BC_zone_bc
     real(dp), dimension(:,:), allocatable :: BC_zone_coords

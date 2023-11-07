@@ -2,13 +2,13 @@
 %Max Wood - mw16116@bristol.ac.uk
 %Univeristy of Bristol - Department of Aerospace Engineering
 
-%Version 2.3
-%Updated 05-09-2023
+%Version 3.0
+%Updated 07-11-2023
 
 %Function -----------------------------------------------------------------
 function [] = write_input_file_cm2d(cm2dop)
 fid = fopen('io\cell_mesh2d_options.dat','w+');
-    fprintf(fid,'%s \n','#cell_mesh2d V2 options file (version 0.4.5)');
+    fprintf(fid,'%s \n','#cell_mesh2d V2 options file (version 0.6.0)');
     fprintf(fid,'%s \n',' ');
     
     fprintf(fid,'%s \n','#=== General Options =================================');
@@ -29,7 +29,7 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n','#Boundary normal direction switch in to / out of the mesh domain');
     fprintf(fid,'%s \n',cm2dop.boundary_dir);
     fprintf(fid,'%s \n',' '); 
-    fprintf(fid,'%s \n','#Mesh output format (flow2d / su2_cutcell / su2_dual)');
+    fprintf(fid,'%s \n','#Mesh output format (cutcell / su2_cutcell / su2_dual)');
     fprintf(fid,'%s \n',cm2dop.meshfrmat);
     fprintf(fid,'%s \n',' '); 
 
@@ -126,6 +126,9 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n',' ');
     fprintf(fid,'%s \n','#Number of vertices each side used to smooth the gradient at each surface vertex');
     fprintf(fid,'%d \n',cm2dop.glink_nsmooth);
+    fprintf(fid,'%s \n',' ');
+    fprintf(fid,'%s \n','#RBF interpolation smoothing relaxation parameter');
+    fprintf(fid,'%f \n',cm2dop.glink_RBF_relax);
     fprintf(fid,'%s \n',' ');
 
     fprintf(fid,'%s \n','#=== Boundary Condition Options ======================');
