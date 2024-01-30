@@ -10,6 +10,8 @@ clearvars
 clc
 
 %TODO
+%- update options io
+%- add input for cell aspect ration mrege denial
 %- mind mesh add surface zone construction on far field regions 
 
 %% Input
@@ -22,19 +24,19 @@ cm2dop.meshtype = 0;              %Type of mesh (0 = cutcell | 1 = minD block me
 cm2dop.meshinout = 'out';         %Mesh inside or outside of geometry (default out)
 cm2dop.surface_dir = 'in';        %Surface normal direction switch in to / out of the mesh domain (default in)
 cm2dop.boundary_dir = 'in';       %Boundary normal direction switch in to / out of the mesh domain (default in)
-cm2dop.meshfrmat = 'cutcell';    %Mesh output format (cutcell / su2_cutcell / su2_dual)
-% cm2dop.meshfrmat = 'su2_dual';
+% cm2dop.meshfrmat = 'cutcell';    %Mesh output format (cutcell / su2_cutcell / su2_dual)
+cm2dop.meshfrmat = 'su2_dual';
 % cm2dop.meshfrmat = 'su2_cutcell';
 
 %Cut-Cell mesh options ====================================================
 %Quadtree options
 cm2dop.nrefine = 12;              %Maximum refinement level 
-cm2dop.nrefineB = 2;              %Maximum additional refinement levels in high curvature regions
+cm2dop.nrefineB = 0;              %Maximum additional refinement levels in high curvature regions
 cm2dop.ncell_max = 200000;        %Maximum number of cells
-cm2dop.nrflood_i = 6;             %Refinement adjacency flooding iterations at the first refinement
-cm2dop.nrflood_f = 4;             %Refinement adjacency flooding iterations at the final refinement
-cm2dop.nrflood_b = 2;             %Refinement adjacency flooding iterations on boosted refinement
-cm2dop.fbound = 12;               %Far field distance from object centre  
+cm2dop.nrflood_i = 8;             %Refinement adjacency flooding iterations at the first refinement
+cm2dop.nrflood_f = 10;             %Refinement adjacency flooding iterations at the final refinement
+cm2dop.nrflood_b = 0;             %Refinement adjacency flooding iterations on boosted refinement
+cm2dop.fbound = 15;               %Far field distance from object centre  
 cm2dop.coffset = [0.0 0.0];       %Object/mesh centre offset (x / y)
 
 %Custom domain bound specification 
@@ -69,6 +71,7 @@ cm2dop.adtree_maxd = 4;           %AD tree maximum depth in terms of dimension c
 
 %Gradient linking options
 cm2dop.glink_con = 0;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
+cm2dop.glinktype = 'int';         %Gradient linking type (rbf or int)
 cm2dop.glink_nnn = 10;            %Number of nearest neighbours to use for volume to surface gradient interpolation
 cm2dop.glink_nsmooth = 0;         %Number of vertices each side used to smooth the gradient at each surface vertex
 cm2dop.glink_RBF_relax = 1e-6;    %RBF interpolation smoothing relaxation parameter
@@ -106,7 +109,7 @@ end
 
 %Call meshing function 
 system('cell_mesh2d mesh');
-system('cell_mesh2d project');
+% system('cell_mesh2d project');
 
 %% Load mesh
 
@@ -130,7 +133,7 @@ patch('vertices',vtx,'faces',edge,'EdgeAlpha',1.0,'Marker','none');
 [~,~,vertices,connectivity] = import_cell_mesh2d_surface('io/cell_mesh2d_surface.dat');
 
 %Plot object surface 
-% patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','none','EdgeColor',[0.1 0.1 1],'MarkerEdgeColor','b');
+patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','none','EdgeColor',[0.1 0.1 1],'MarkerEdgeColor','b');
 
 %Plot boundary conditions 
 for ii=1:Nedge
@@ -146,10 +149,22 @@ for ii=1:Nedge
 end
 
 % %Plot surface and volume gradients 
-grad_surf = load('io/gradient_surf.dat');
-quiver(vertices(:,1),vertices(:,2),grad_surf(:,1),grad_surf(:,2),0,'r','maxheadsize',0.01)
-grad_vol = load('io/gradient.dat');
-quiver(vtx(:,1),vtx(:,2),grad_vol(:,1),grad_vol(:,2),0,'b','maxheadsize',0.01)
+% grad_surf = load('io/gradient_surf.dat');
+% quiver(vertices(:,1),vertices(:,2),grad_surf(:,1),grad_surf(:,2),0,'r','maxheadsize',0.01)
+% grad_vol = load('io/gradient.dat');
+% quiver(vtx(:,1),vtx(:,2),grad_vol(:,1),grad_vol(:,2),0,'b','maxheadsize',0.01)
+ 
+% %Plot cell
+% % ctgt = 4475;
+% % ctgt = 4654;
+% ctgt = 4653;
+% for ii=1:Nedge
+%     if cell_lr(ii,1) == ctgt || cell_lr(ii,2) == ctgt
+%         % edge(ii,:)
+%         % cell_lr(ii,:)
+%         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','.','Edgecolor','g');
+%     end
+% end 
 
 
 %Format

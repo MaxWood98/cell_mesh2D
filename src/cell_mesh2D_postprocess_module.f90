@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 5.0
-!Updated 06-09-2023
+!Version 5.2
+!Updated 18-01-2024
 
 !Module
 module cellmesh2d_postprocess_mod
@@ -335,6 +335,7 @@ end subroutine clean_mesh_shortE
 
 !Mesh sliver cell cleaning subroutine ===========================
 subroutine clean_mesh_sliverC(volume_mesh,cm2dopt,Nmerge,Nmerge_fail)
+use ieee_arithmetic
 implicit none 
 
 !Variables - Import
@@ -343,14 +344,15 @@ type(cm2d_options) :: cm2dopt
 type(vol_mesh_data) :: volume_mesh
 
 !Variables - Local 
-integer(in) :: ii,aa,aa2,aa3,Ncremove,maxcedge,etgt,ctgt,ctgtp,cadj,cadj2,NcellN,NedgeN,merge_invalid
+integer(in) :: ii,jj,aa,aa2,aa3,Ncremove,maxcedge,vtgt,etgt,ctgt,ctgtp,cadj,cadj2,NcellN,NedgeN,merge_invalid
 integer(in) :: Ninvalid,invalid_trigger
 integer(in) :: cell_remove(volume_mesh%ncell),cell_surfadj(volume_mesh%ncell),cell_map(volume_mesh%ncell)
 integer(in) :: cell_nedge(volume_mesh%ncell),edge_remove(volume_mesh%nedge),edge_map(volume_mesh%nedge)
 integer(in), dimension(:), allocatable :: cell_level_new
 integer(in), dimension(:,:), allocatable :: cell2edge,cell2cell,edges_new
-real(dp) :: AEdge,vref,vmax
-real(dp) :: Cvol(volume_mesh%ncell)
+real(dp) :: AEdge,vref,vmax,xmaxc,xminc,ymaxc,yminc,edgenorm,merge_aspect
+real(dp) :: Cvol(volume_mesh%ncell),cell_span(volume_mesh%ncell)
+real(dp) :: minmax_x(volume_mesh%ncell,2),minmax_y(volume_mesh%ncell,2)
 
 !Initialise
 Nmerge = 0 
@@ -416,6 +418,41 @@ if (Ncremove .NE. 0) then
         end if 
     end do 
 
+    !Find maximum and minimum coordinates of each cell 
+    minmax_x(:,:) = 0.0d0 
+    minmax_y(:,:) = 0.0d0 
+    do ii=1,volume_mesh%ncell 
+        xmaxc = ieee_value(1.0d0,ieee_negative_inf)
+        xminc = ieee_value(1.0d0,ieee_positive_inf) 
+        ymaxc = ieee_value(1.0d0,ieee_negative_inf)
+        yminc = ieee_value(1.0d0,ieee_positive_inf) 
+        do aa=1,cell_nedge(ii)
+            etgt = cell2edge(ii,aa)
+            do jj=1,2
+                vtgt = volume_mesh%edge(etgt,jj)
+                if (volume_mesh%vertices(vtgt,1) .GT. xmaxc) then 
+                    xmaxc = volume_mesh%vertices(vtgt,1)
+                elseif (volume_mesh%vertices(vtgt,1) .LT. xminc) then 
+                    xminc = volume_mesh%vertices(vtgt,1)
+                end if 
+                if (volume_mesh%vertices(vtgt,2) .GT. ymaxc) then 
+                    ymaxc = volume_mesh%vertices(vtgt,2)
+                elseif (volume_mesh%vertices(vtgt,2) .LT. yminc) then 
+                    yminc = volume_mesh%vertices(vtgt,2)
+                end if 
+            end do 
+        end do 
+        minmax_x(ii,1) = xminc
+        minmax_x(ii,2) = xmaxc
+        minmax_y(ii,1) = yminc
+        minmax_y(ii,2) = ymaxc
+    end do 
+
+    !Find cell maximum spans 
+    do ii=1,volume_mesh%ncell 
+        cell_span(ii) = sqrt((minmax_x(ii,2) - minmax_x(ii,1))**2 + (minmax_y(ii,2) - minmax_y(ii,1))**2)
+    end do 
+
     !Build cell mapping for retained cells
     NcellN = 0 
     cell_map(:) = 0 
@@ -473,6 +510,17 @@ if (Ncremove .NE. 0) then
                     end if
                 end if
             end do 
+
+            !Tag this merge as invalid if the aspect ratio of this edge to the maximum dimension of the cell is high
+            if (etgt .GT. 0) then  
+                edgenorm = norm2(volume_mesh%vertices(volume_mesh%edge(etgt,2),:) - &
+                volume_mesh%vertices(volume_mesh%edge(etgt,1),:))
+                merge_aspect = cell_span(ii)/(edgenorm + 1e-10)
+                if (merge_aspect .GE. 10.0d0) then !Set aspect bound here *****************
+                    ctgt = 0
+                    invalid_trigger = 1
+                end if 
+            end if 
 
             !Count invalid cells 
             if ((ctgt == 0) .AND. (invalid_trigger == 1)) then 
@@ -553,7 +601,7 @@ if (Ncremove .NE. 0) then
     if (cm2dopt%dispt == 1) then
         write(*,'(A,I0,A,I0,A)') '    {identified ',Ncremove,' sliver cells and merged ',Nmerge,' cells}'
         if (Ninvalid .NE. 0) then 
-            write(*,'(A,I0,A)') '    {',Ninvalid,' merges prevented due to double adjacency}'
+            write(*,'(A,I0,A)') '    {',Ninvalid,' merges prevented due to double adjacency or aspect ratio}'
         end if 
     end if 
 end if
@@ -2181,6 +2229,8 @@ do cc=1,volume_mesh%ncell
         else
             vm1 = 0 
             print *, '** edge merge failure'
+            cm2dopt%cm2dfailure = 1
+            return 
         end if 
 
         !Find end vertex
@@ -2192,6 +2242,8 @@ do cc=1,volume_mesh%ncell
         else
             vm2 = 0 
             print *, '** edge merge failure'
+            cm2dopt%cm2dfailure = 1
+            return 
         end if 
 
         !Build new edge 
@@ -2262,6 +2314,131 @@ if (cm2dopt%dispt == 1) then
 end if 
 return 
 end subroutine clean_internal_vlnc2_vertices
+
+
+
+
+!Subroutine to merge surface adjacent cells of only two edges ===========================
+subroutine merge_2edge_surfcells(nremove,volume_mesh)
+implicit none 
+
+!Variables - Import
+integer(in) :: nremove
+type(vol_mesh_data) :: volume_mesh
+
+!Variables - Local
+integer(in) :: ii,cc,ee
+integer(in) :: etgt,NedgeN,NcellN,cother,hasinternal,hassurface
+integer(in) :: cell_remove(volume_mesh%ncell),edge_remove(volume_mesh%nedge),edge_map(volume_mesh%nedge),cell_map(volume_mesh%ncell)
+integer(in), dimension(:), allocatable :: cell_level_new
+integer(in), dimension(:,:), allocatable :: edges_new
+
+!Construct volume mesh cells 
+call build_mesh_cells(volume_mesh)
+
+!Check for cells consisting of only two edges with one a surface edge and remove the volume mesh internal edge
+nremove = 0 
+cell_remove(:) = 0 
+do cc=1,volume_mesh%ncell
+    if (volume_mesh%cells(cc)%nedge == 2) then 
+        hasinternal = 0 
+        hassurface = 0 
+        do ee=1,volume_mesh%cells(cc)%nedge
+            etgt = volume_mesh%cells(cc)%edges(ee)
+            if ((volume_mesh%edge(etgt,3) .GT. 0) .AND. (volume_mesh%edge(etgt,4) .GT. 0)) then 
+                hasinternal = 1
+            elseif ((volume_mesh%edge(etgt,3) == -1) .OR. (volume_mesh%edge(etgt,4) == -1)) then 
+                hassurface = 1
+            end if 
+        end do 
+        if ((hasinternal == 1) .AND. (hassurface == 1)) then 
+            cell_remove(cc) = 1
+            nremove = nremove + 1
+        end if 
+    end if 
+end do 
+
+!Remove cells requested by eliminating edges
+edge_remove(:) = 0 
+do cc=1,volume_mesh%ncell
+    if (cell_remove(cc) == 1) then 
+
+        !Tag edge to remove and find the cell on the other side of this edge 
+        cother = 0 
+        do ee=1,volume_mesh%cells(cc)%nedge
+            etgt = volume_mesh%cells(cc)%edges(ee)
+            if ((volume_mesh%edge(etgt,3) .GT. 0) .AND. (volume_mesh%edge(etgt,4) .GT. 0)) then 
+                edge_remove(etgt) = 1
+                if (volume_mesh%edge(etgt,3) == cc) then 
+                    cother = volume_mesh%edge(etgt,4)
+                elseif (volume_mesh%edge(etgt,4) == cc) then 
+                    cother = volume_mesh%edge(etgt,3)
+                end if 
+            end if 
+        end do 
+
+        !Map the surface edge on this cell to this other cell 
+        do ee=1,volume_mesh%cells(cc)%nedge
+            etgt = volume_mesh%cells(cc)%edges(ee)
+            if ((volume_mesh%edge(etgt,3) == -1) .OR. (volume_mesh%edge(etgt,4) == -1)) then 
+                if (volume_mesh%edge(etgt,3) == cc) then 
+                    volume_mesh%edge(etgt,3) = cother
+                end if 
+                if (volume_mesh%edge(etgt,4) == cc) then 
+                    volume_mesh%edge(etgt,4) = cother
+                end if 
+            end if 
+        end do 
+    end if 
+end do 
+
+!Build edge mapping for retained edges
+NedgeN = 0 
+edge_map(:) = 0 
+do ii=1,volume_mesh%nedge
+    if (edge_remove(ii) .NE. 1) then 
+        NedgeN = NedgeN + 1
+        edge_map(ii) = NedgeN
+    end if
+end do 
+
+!Build cell mapping for retained cells 
+NcellN = 0 
+cell_map(:) = 0 
+do ii=1,volume_mesh%ncell 
+    if (cell_remove(ii) == 0) then 
+        NcellN = NcellN + 1
+        cell_map(ii) = NcellN 
+    end if
+end do
+
+!Rebuild mesh 
+allocate(edges_new(NedgeN,4))
+allocate(cell_level_new(NcellN))
+do ii=1,volume_mesh%nedge
+    if (edge_map(ii) .NE. 0) then 
+        edges_new(edge_map(ii),:) = volume_mesh%edge(ii,:)
+        edges_new(edge_map(ii),4) = cell_map(edges_new(edge_map(ii),4))
+        if (edges_new(edge_map(ii),3) .GT. 0) then 
+            edges_new(edge_map(ii),3) = cell_map(edges_new(edge_map(ii),3))
+        end if 
+    end if
+end do 
+do ii=1,volume_mesh%ncell 
+    if (cell_map(ii) .NE. 0) then 
+        cell_level_new(cell_map(ii)) = volume_mesh%cell_level(ii)
+    end if 
+end do 
+deallocate(volume_mesh%edge)
+allocate(volume_mesh%edge(NedgeN,4))
+deallocate(volume_mesh%cell_level)
+allocate(volume_mesh%cell_level(NcellN))
+volume_mesh%cell_level(:) = cell_level_new(:)
+volume_mesh%edge(:,:) = edges_new(:,:)
+volume_mesh%nedge = NedgeN
+volume_mesh%ncell = NcellN
+return 
+end subroutine merge_2edge_surfcells
 
 
 
@@ -3220,6 +3397,9 @@ do ee=1,volume_mesh%nedge
 end do 
 
 !Allocate cell structure 
+if (allocated(volume_mesh%cells)) then 
+    deallocate(volume_mesh%cells)
+end if 
 allocate(volume_mesh%cells(volume_mesh%ncell))
 
 !Construct cells 

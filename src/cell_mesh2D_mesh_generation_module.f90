@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 1.8
-!Updated 18-09-2023
+!Version 1.9
+!Updated 18-01-2024
 
 !Module
 module cellmesh2d_mesh_generation_mod
@@ -201,6 +201,10 @@ nmiter = 10 !volume_mesh%ncell !set maximum merging iterations
 nifail = 0 
 do ii=1,nmiter
     call clean_mesh_sliverC(volume_mesh,cm2dopt,Nmerge,Nmerge_fail)
+    if (cm2dopt%cm2dfailure == 1) then 
+        call export_status(cm2dopt)
+        stop
+    end if 
     if (Nmerge_fail .NE. 0) then 
         nifail = nifail + 1
     end if 
@@ -220,6 +224,10 @@ call remap_cell_indecies(volume_mesh)
 
 !Remove mesh internal valence two vertices 
 call clean_internal_vlnc2_vertices(volume_mesh,cm2dopt)
+if (cm2dopt%cm2dfailure == 1) then 
+    call export_status(cm2dopt)
+    stop
+end if 
 
 !Simplify the mesh surface within each cell if simplified surface requested
 if (cm2dopt%surface_type == 0) then     
@@ -228,6 +236,15 @@ if (cm2dopt%surface_type == 0) then
     end if
     call simplify_surface(volume_mesh)
 end if 
+
+!Merge surface adjacent cells consisting of only two edges after simplification collapse
+call merge_2edge_surfcells(Nmerge,volume_mesh)
+if (cm2dopt%dispt == 1) then
+    write(*,'(A,I0,A)') '    {eliminated ',Nmerge,' collapsed surface cells}'
+end if 
+
+!Remap cell indecies 
+call remap_cell_indecies(volume_mesh)
 
 !Build surface vertex mappings 
 call build_surface_links(volume_mesh,surface_mesh)
@@ -286,8 +303,10 @@ if (minval(Cvol) .LE. 0.0d0) then
     do ii=1,volume_mesh%ncell
         if (Cvol(ii) .LT. 0.0d0) then 
             print '(A,I0)', '** negative volume cell identified: ',ii
+            cm2dopt%cm2dfailure = 2
         elseif (Cvol(ii) == 0.0d0) then  
             print '(A,I0)', '** zero volume cell identified: ',ii
+            cm2dopt%cm2dfailure = 2
         end if 
     end do 
 end if  

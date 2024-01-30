@@ -8,7 +8,7 @@
 %Function -----------------------------------------------------------------
 function [] = write_input_file_cm2d(cm2dop)
 fid = fopen('io\cell_mesh2d_options.dat','w+');
-    fprintf(fid,'%s \n','#cell_mesh2d V2 options file (version 0.6.0)');
+    fprintf(fid,'%s \n','#cell_mesh2d V2 options file (version 0.7.0)');
     fprintf(fid,'%s \n',' ');
     
     fprintf(fid,'%s \n','#=== General Options =================================');
@@ -120,6 +120,9 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n','#=== Gradient Interpolation Options ==================');
     fprintf(fid,'%s \n','#Construct volume to surface gradient interpolation (1 = yes | 0 = no)');
     fprintf(fid,'%d \n',cm2dop.glink_con);
+    fprintf(fid,'%s \n',' '); 
+    fprintf(fid,'%s \n','#Gradient linking type (rbf or int)');
+    fprintf(fid,'%s \n',cm2dop.glinktype);
     fprintf(fid,'%s \n',' '); 
     fprintf(fid,'%s \n','#Number of nearest neighbours to use for volume to surface gradient interpolation');
     fprintf(fid,'%d \n',cm2dop.glink_nnn);

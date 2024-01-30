@@ -369,8 +369,8 @@ end subroutine construct_surfvol_grad_coupling
 
 
 
-!Gradient projection subroutine ===========================
-subroutine project_gradients(gradient_surf,gradient_vol,volume_mesh,surface_mesh,Ndim,node_minDIVsize,global_target_pad,cm2dopt)
+!Gradient projection subroutine (RBF interpolation) ===========================
+subroutine project_gradients_RBF(gradient_surf,gradient_vol,volume_mesh,surface_mesh,Ndim,node_minDIVsize,global_target_pad,cm2dopt)
 implicit none 
 
 !Variables - Import
@@ -724,7 +724,51 @@ do vv=1,surface_mesh%nvtx
     end if 
 end do 
 return 
-end subroutine project_gradients
+end subroutine project_gradients_RBF
+
+
+
+
+!Gradient projection subroutine (direct edge interpolation) ===========================
+subroutine project_gradients_INT(gradient_surf,gradient_vol,volume_mesh,surface_mesh,cm2dopt)
+implicit none 
+
+!Variables - Import
+real(dp), dimension(:,:) :: gradient_vol
+real(dp), dimension(:,:), allocatable :: gradient_surf
+type(surface_data) :: surface_mesh
+type(vol_mesh_data) :: volume_mesh
+type(cm2d_options) :: cm2dopt
+
+!Variables - Local
+integer(in) :: ii
+integer(in) :: etgt,vtgt,ev1,ev2
+real(dp) :: sedge_frac
+
+!Allocate and initialise surface gradient structure
+allocate(gradient_surf(surface_mesh%nvtx,2))
+gradient_surf(:,:) = 0.0d0 
+
+!Accumulate projected gradients to each surface vertex
+do ii=1,volume_mesh%nvtx_surf 
+
+    !Target volume mesh vertex, surface edge and surface edge fraction
+    vtgt = volume_mesh%surf_vtx(ii)
+    etgt = volume_mesh%surf_vtx_seg(ii)
+    sedge_frac = volume_mesh%surf_vtx_segfrac(ii)
+
+    !Surface vertices on this edge
+    ev1 = surface_mesh%faces(etgt,1)
+    ev2 = surface_mesh%faces(etgt,2)
+
+    !Accumulate gradient at rate 1-sedge_frac to ev1 and sedge_frac to ev2
+    gradient_surf(ev1,1) = gradient_surf(ev1,1) + (1.0d0 - sedge_frac)*gradient_vol(vtgt,1)
+    gradient_surf(ev1,2) = gradient_surf(ev1,2) + (1.0d0 - sedge_frac)*gradient_vol(vtgt,2)
+    gradient_surf(ev2,1) = gradient_surf(ev2,1) + sedge_frac*gradient_vol(vtgt,1)
+    gradient_surf(ev2,2) = gradient_surf(ev2,2) + sedge_frac*gradient_vol(vtgt,2)
+end do 
+return 
+end subroutine project_gradients_INT
 
 
 

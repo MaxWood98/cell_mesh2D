@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 6.0
-!Updated 07-11-2023
+!Version 6.1
+!Updated 15-12-2023
 
 !Module
 module cellmesh2d_io_mod
@@ -284,6 +284,12 @@ read(11,*) !skip
 read(11,*) cm2dopt%glink_con
 read(11,*) !skip
 read(11,*) !skip
+! read(11,*) cm2dopt%glink_type
+read(11,*) rtemp
+allocate(character(len=len_trim(rtemp)) :: cm2dopt%glink_type)
+cm2dopt%glink_type = rtemp(1:len_trim(rtemp))
+read(11,*) !skip
+read(11,*) !skip
 read(11,*) cm2dopt%glink_nnn
 read(11,*) !skip
 read(11,*) !skip
@@ -399,21 +405,26 @@ end if
 !Mesh 
 open(11,file=cm2dopt%iopath//'grid') !mesh file
     write(11,'(I0,A,I0,A,I0)') volume_mesh%ncell,' ',volume_mesh%nedge,' ',volume_mesh%nvtx !Properties
-    do ii=1,volume_mesh%nedge
+    do ii=1,volume_mesh%nedge !Edges
         write(11,'(I0,A,I0,A,I0,A,I0)') volume_mesh%edge(ii,1),' ',volume_mesh%edge(ii,2),' ',&
                                         volume_mesh%edge(ii,3),' ',volume_mesh%edge(ii,4) !Edges
     end do
-    do ii=1,volume_mesh%nvtx
+    do ii=1,volume_mesh%nvtx !Vertices
         write(11,'(I0,A,A,A,A)') ii,' ',real2F0_Xstring(volume_mesh%vertices(ii,1),16_in),&
                                     ' ',real2F0_Xstring(volume_mesh%vertices(ii,2),16_in) !Vertices
+    end do
+    write(11,'(I0)') volume_mesh%nvtx_surf
+    do ii=1,volume_mesh%nvtx_surf !Surface link data 
+        write(11,'(I0,A,I0,A,A)') volume_mesh%surf_vtx(ii),' ',volume_mesh%surf_vtx_seg(ii),' ',&
+        real2F0_Xstring(volume_mesh%surf_vtx_segfrac(ii),16_in) !vertex | link | fraction
     end do
 close(11)
 
 ! !Surface link data 
 ! open(11,file=cm2dopt%iopath//'grid_surf_link') !mesh surface to geometry surface links  
 !     do ii=1,volume_mesh%nvtx_surf
-!         write(11,'(I10,A,I10,A,F18.12)') volume_mesh%surf_vtx(ii),' ',volume_mesh%surf_vtx_seg(ii),' ',&
-!                                          volume_mesh%surf_vtx_segfrac(ii) !vertex | link | fraction
+!         write(11,'(I0,A,I0,A,A)') volume_mesh%surf_vtx(ii),' ',volume_mesh%surf_vtx_seg(ii),' ',&
+!         real2F0_Xstring(volume_mesh%surf_vtx_segfrac(ii),16_in) !vertex | link | fraction
 !     end do
 ! close(11)
 
@@ -561,6 +572,15 @@ do ii=1,volume_mesh%nvtx
     read(11,*) vidx,volume_mesh%vertices(ii,:)
 end do 
 
+!Read surface link data 
+read(11,*) volume_mesh%nvtx_surf
+allocate(volume_mesh%surf_vtx(volume_mesh%nvtx_surf))
+allocate(volume_mesh%surf_vtx_seg(volume_mesh%nvtx_surf))
+allocate(volume_mesh%surf_vtx_segfrac(volume_mesh%nvtx_surf))
+do ii=1,volume_mesh%nvtx_surf 
+    read(11,*) volume_mesh%surf_vtx(ii),volume_mesh%surf_vtx_seg(ii),volume_mesh%surf_vtx_segfrac(ii)
+end do
+
 !Close file 
 close(11)
 
@@ -643,6 +663,28 @@ end subroutine export_surface_gradients
 
 
 
+!Write geometry check results subroutine ===========================
+subroutine export_geometry_check(is_selfintersecting,cm2dopt)
+implicit none 
+
+!Variables - Import
+logical :: is_selfintersecting
+type(cm2d_options) :: cm2dopt
+
+!Write
+open(11,file=cm2dopt%iopath//'geometry_status') 
+    if (is_selfintersecting) then 
+        write(11,'(A,I0)') 'self intersection = ',1
+    else
+        write(11,'(A,I0)') 'self intersection = ',0
+    end if 
+close(11)
+return 
+end subroutine export_geometry_check
+
+
+
+
 !Write status subroutine ===========================
 subroutine export_status(cm2dopt)
 implicit none 
@@ -652,7 +694,7 @@ type(cm2d_options) :: cm2dopt
 
 !Write
 open(11,file=cm2dopt%iopath//'cm2d_status') 
-    write(11,'(i2)') cm2dopt%cm2dfailure
+    write(11,'(I0)') cm2dopt%cm2dfailure
 close(11)
 return 
 end subroutine export_status
@@ -776,41 +818,42 @@ end subroutine write_cell_dataPLT
 
 !F0.X format with leading zero function =========================
 function real2F0_Xstring(val,X) result(str)
+implicit none 
 
 !Result 
 character(len=:), allocatable :: str
 
 !Variables - Import 
 character(len=10) :: frmtI
-character(len=:), allocatable :: frmt,str_I
-integer(in) :: X,len_frmt,len_str
+character(len=20), allocatable :: frmt
+integer(in) :: X,len_str
 real(dp) :: val
 
-!Set format descriptor
+!Construct format descriptor 
 write(frmtI,'(I0)') X
-len_frmt = len_trim(frmtI)
-allocate(character(len=len_frmt) :: frmt)
-frmt = frmtI(1:len_frmt)
-frmt = frmt//')'
-frmt = '(F0.'//frmt
+frmt = '(F0.'//trim(frmtI)//')'
 
-!Allocate initial character
-allocate(character(len=4*X) :: str_I)
+!Find length of result string 
+if (abs(val) .LT. 1.0d0) then 
+    len_str = 1
+else
+    len_str = floor(log10(abs(val))) + 1
+end if 
+len_str = len_str + X + 2
 
-!Write data to return charachter
-write(str_I,frmt) val
-
-!Allocate return character
-len_str = len_trim(str_I)
+!Write to return string 
 allocate(character(len=len_str) :: str)
-str = str_I(1:len_str)
+write(str,trim(frmt)) val
+str = trim(str)
 
 !Assign leading zero if required
 if (str(1:1) == '.') then 
-    str = '0'//str
+    str = '0'//trim(str)
 elseif (str(1:2) == '-.') then 
+    len_str = len_trim(str)
     str = '-0.'//str(3:len_str)
 end if 
+return 
 end function real2F0_Xstring
 
 

@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 8.1
-!Updated 18-09-2023
+!Version 8.2
+!Updated 18-01-2024
 
 !Geometry subroutines module
 module cellmesh2d_geometry_mod
@@ -533,6 +533,112 @@ end if
 ! end if 
 return 
 end function surface_rcurv
+
+
+
+
+!Check geometry for self intersections function ===========================
+function is_self_intersecting(surface_mesh,cm2dopt) result(is_selfintersecting)
+implicit none 
+
+!Variables - Import
+logical :: is_selfintersecting
+type(surface_data) :: surface_mesh
+type(cm2d_options) :: cm2dopt
+
+!Variables - Local 
+integer(in) :: ii,nn,kk
+integer(in) :: Ndim,node_minDIVsize,fp,fc,fn,nselected,segval,etgt
+integer(in), dimension(:), allocatable:: node_select
+real(dp) :: global_target_pad,cpadSZ,zxmin,zxmax,zymin,zymax,zzmin,zzmax
+real(dp) :: v1(2),v2(2),vt1(2),vt2(2)
+real(dp), dimension(:,:), allocatable :: tvtx
+type(tree_data) :: surface_adtree
+
+!Initialise intersection state
+is_selfintersecting = .false.
+
+!Set global object bounding box padding for adtree node containement
+global_target_pad = 0.0d0
+
+!Adtree number of dimensions (4)
+Ndim = 4
+
+!Set minimum divisible node size within the AD tree 
+node_minDIVsize = 10
+
+!Construct 4D bounding box coordinates for each face in the surface mesh
+allocate(tvtx(surface_mesh%nfcs,4))
+do ii=1,surface_mesh%nfcs
+    tvtx(ii,1) = minval(surface_mesh%vertices(surface_mesh%faces(ii,:),1)) !xmin
+    tvtx(ii,2) = minval(surface_mesh%vertices(surface_mesh%faces(ii,:),2)) !ymin
+    tvtx(ii,3) = maxval(surface_mesh%vertices(surface_mesh%faces(ii,:),1)) !xmax
+    tvtx(ii,4) = maxval(surface_mesh%vertices(surface_mesh%faces(ii,:),2)) !ymax
+end do
+
+!Construct ad_tree
+call build_ADtree(surface_adtree,ndim,cm2dopt%ADTmax_depth,node_minDIVsize,tvtx,global_target_pad,cm2dopt%dispt)
+
+!Check each segment for self intersections with all but the two directly adjacent segments 
+allocate(node_select(surface_adtree%nnode))
+node_select(:) = 0 
+nselected = 0 
+do ii=1,surface_mesh%nfcs
+
+    !Faces to exclude (previous / current / next)
+    fp = surface_mesh%v2f(surface_mesh%faces(ii,1),1)
+    fc = ii 
+    fn = surface_mesh%v2f(surface_mesh%faces(ii,2),2)
+
+    !Edge ends
+    v1(:) = surface_mesh%vertices(surface_mesh%faces(ii,1),:)
+    v2(:) = surface_mesh%vertices(surface_mesh%faces(ii,2),:)
+
+    !Set padding size
+    cpadSZ = norm2(v2 - v1)
+
+    !Intersection bounding box
+    zxmin = min(v1(1),v2(1)) - cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> xmin
+    zxmax = max(v1(1),v2(1)) + cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> xmax
+    zymin = min(v1(2),v2(2)) - cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> ymin
+    zymax = max(v1(2),v2(2)) + cpadSZ*cm2dopt%ADTpadding !tgt bounding box -> ymax
+
+    !Identify any edge bounding boxes that may overlap the edge 
+    call search_ADtree(nselected,node_select,surface_adtree,zxmin,zxmax,zymin,zymax,zzmin,zzmax)
+
+    !Check for intersection with all edges selected 
+    do nn=1,nselected
+        do kk=1,surface_adtree%tree(node_select(nn))%nentry
+
+            !Selected edge
+            etgt = surface_adtree%tree(node_select(nn))%entry(kk)
+
+            !If this edge is not any of the excluded three
+            if ((etgt .NE. fp) .AND. (etgt .NE. fc) .AND. (etgt .NE. fn)) then 
+
+                !Verticies of the ends of the surface segment 
+                vt1(:) = surface_mesh%vertices(surface_mesh%faces(etgt,1),:)
+                vt2(:) = surface_mesh%vertices(surface_mesh%faces(etgt,2),:)
+
+                !Intersection type if any 
+                segval = seg_seg_intersect_bool(v1,v2,vt1,vt2)
+
+                !If an intersection set tag and exit 
+                if (segval .NE. 0) then 
+                    is_selfintersecting = .true.
+                    exit 
+                end if 
+            end if 
+        end do 
+    end do 
+
+    !Exit if self intersection found 
+    if (is_selfintersecting) then 
+        exit 
+    end if 
+end do 
+return 
+end function is_self_intersecting
 
 
 end module cellmesh2d_geometry_mod

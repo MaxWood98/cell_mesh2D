@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 3.0
-!Updated 07-11-2023
+!Version 4.0
+!Updated 18-01-2024
 
 !Main
 program cell_mesh2d
@@ -11,6 +11,7 @@ use cellmesh2d_mesh_generation_mod
 implicit none
 
 !Variables
+logical :: is_selfintersecting
 type(cm2d_options) :: cm2dopt
 type(surface_data) :: surface_mesh
 type(vol_mesh_data) :: volume_mesh
@@ -28,7 +29,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.6.0 || 07/11/2023         |'
+    write(*,'(A)')'|        Version 0.7.0 || 18/01/2024         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'
@@ -37,11 +38,41 @@ if (cm2dopt%dispt == 1) then
 end if
 
 !Process requested mode 
-if (cm2dopt%mode == 'mesh') then !mesh generation mode
+if (cm2dopt%mode == 'check') then !geometry check mode 
 
     !Display
     if (cm2dopt%dispt == 1) then
-        write(*,'(A)') '        == mesh contruction mode =='
+        write(*,'(A)') '         == geometry checking mode =='
+    end if
+
+    !Load object surface data
+    if (cm2dopt%dispt == 1) then
+        write(*,*) '--> importing geometry data'
+    end if
+    call import_surface_geometry(surface_mesh,cm2dopt)
+
+    !Preprocess surface geometry 
+    if (cm2dopt%dispt == 1) then
+        write(*,*) '--> preprocessing geometry data'
+    end if
+    call preprocess_surface_mesh(surface_mesh,cm2dopt)
+
+    !Check for self intersections 
+    if (cm2dopt%dispt == 1) then
+        write(*,*) '--> testing for self intersections'
+    end if
+    is_selfintersecting = is_self_intersecting(surface_mesh,cm2dopt)
+    if (cm2dopt%dispt == 1) then
+        write(*,'(A,L,A)') '    {is self intersecting: ',is_selfintersecting,'}'
+    end if
+    
+    !Export check results
+    call export_geometry_check(is_selfintersecting,cm2dopt)
+elseif (cm2dopt%mode == 'mesh') then !mesh generation mode
+
+    !Display
+    if (cm2dopt%dispt == 1) then
+        write(*,'(A)') '         == mesh contruction mode =='
     end if
 
     !Import custom boundary condition zones
@@ -58,7 +89,7 @@ if (cm2dopt%mode == 'mesh') then !mesh generation mode
     !Construct mesh
     call cell_mesh2d_mesh(volume_mesh,surface_mesh,cm2dopt)
 
-    !Exit if failure detected 
+    !Exit if critical failure detected 
     if (cm2dopt%cm2dfailure == 1) then 
         call export_status(cm2dopt)
         stop 
@@ -113,7 +144,11 @@ elseif (cm2dopt%mode == 'project') then !volume to surface gradient projection m
     if (cm2dopt%dispt == 1) then
         write(*,'(A)') '--> projecting volume flow gradients to the surface geometry'
     end if
-    call project_gradients(gradient_surf,gradient_vol,volume_mesh,surface_mesh,4_in,10_in,0.0d0,cm2dopt)
+    if (cm2dopt%glink_type == 'rbf') then 
+        call project_gradients_RBF(gradient_surf,gradient_vol,volume_mesh,surface_mesh,4_in,10_in,0.0d0,cm2dopt)
+    elseif (cm2dopt%glink_type == 'int') then 
+        call project_gradients_INT(gradient_surf,gradient_vol,volume_mesh,surface_mesh,cm2dopt)
+    end if 
 
     !Export surface projected gradients 
     if (cm2dopt%dispt == 1) then
@@ -124,6 +159,9 @@ else
     write(*,'(A,A)') '** unknown mode option requested : ',cm2dopt%mode
     stop
 end if 
+
+!Export status 
+call export_status(cm2dopt)
 
 !End
 if (cm2dopt%dispt == 1) then
