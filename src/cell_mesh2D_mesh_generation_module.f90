@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 1.9
-!Updated 18-01-2024
+!Version 2.0
+!Updated 12-02-2024
 
 !Module
 module cellmesh2d_mesh_generation_mod
@@ -56,7 +56,7 @@ global_target_pad = 0.0d0
 Ndim = 4
 
 !Set minimum divisible node size within the AD tree 
-node_minDIVsize = 10
+node_minDIVsize = cm2dopt%ADTminNodedivsize
 
 !Initialise failure tag
 cm2dopt%cm2dfailure = 0
@@ -91,8 +91,9 @@ obj_cy = 0.5d0*(obj_max_y + obj_min_y)
 if (cm2dopt%dispt == 1) then
     write(*,'(A)') ' '
     write(*,'(A)') '== Properties =========================='
-    write(*,"(A,I0)") '   Imported surface vertices = ', surface_mesh%nvtx
-    write(*,"(A,F12.6,A,F12.6)") '   Geometry dimensions (dx/dy) = ', obj_max_x - obj_min_x,' ', obj_max_y - obj_min_y
+    write(*,"(A,I0)") '   number of vertices = ', surface_mesh%nvtx
+    write(*,"(A,A,A,A)") '   geometry dimensions (dx/dy) = ', &
+    real2F0_Xstring(obj_max_x - obj_min_x,8_in),' / ', real2F0_Xstring(obj_max_y - obj_min_y,8_in)
     write(*,'(A)') '== Properties =========================='
     write(*,'(A)') ' '
 end if

@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.9
-!Updated 07-11-2023
+!Version 1.1
+!Updated 12-02-2024
 
 !Module
 module cellmesh2d_gradient_coupling_mod
@@ -730,7 +730,7 @@ end subroutine project_gradients_RBF
 
 
 !Gradient projection subroutine (direct edge interpolation) ===========================
-subroutine project_gradients_INT(gradient_surf,gradient_vol,volume_mesh,surface_mesh,cm2dopt)
+subroutine project_gradients_INT(gradient_surf,gradient_vol,volume_mesh,surface_mesh)
 implicit none 
 
 !Variables - Import
@@ -738,7 +738,6 @@ real(dp), dimension(:,:) :: gradient_vol
 real(dp), dimension(:,:), allocatable :: gradient_surf
 type(surface_data) :: surface_mesh
 type(vol_mesh_data) :: volume_mesh
-type(cm2d_options) :: cm2dopt
 
 !Variables - Local
 integer(in) :: ii
@@ -769,58 +768,6 @@ do ii=1,volume_mesh%nvtx_surf
 end do 
 return 
 end subroutine project_gradients_INT
-
-
-
-
-!Subroutine to build RBF influence ===========================
-subroutine build_RBF_influence(R,R_sup,Npoint,point_list,vertices,cm2dopt)
-implicit none 
-
-!Variables - Import
-integer(in) :: Npoint 
-integer(in), dimension(:) :: point_list
-real(dp) :: R_sup
-real(dp), dimension(:,:) :: R,vertices 
-type(cm2d_options) :: cm2dopt
-
-!Variables - Local
-integer(in) :: ii,jj 
-integer(in) :: v1,v2
-real(dp) :: mindist(Npoint)
-
-!Populate distance matrix
-R(:,:) = 0.0d0 
-mindist(:) = ieee_value(1.0d0,IEEE_POSITIVE_INF)
-do ii=1,Npoint
-    v1 = point_list(ii)
-    do jj=1,Npoint
-        v2 = point_list(jj)
-        R(ii,jj) = norm2(vertices(v2,:) - vertices(v1,:)) 
-        if ((R(ii,jj) .GT. 0.0d0) .AND. (R(ii,jj) .LT. mindist(ii))) then 
-            mindist(ii) = R(ii,jj)
-        end if 
-    end do 
-end do 
-
-!Set support radius 
-R_sup = 50.0d0*maxval(R(1:Npoint,1:Npoint))
-
-!Evaluate RBF values for each distance entry
-do ii=1,Npoint
-    do jj=1,Npoint
-        R(ii,jj) = wendlandc2(R(ii,jj),R_sup)
-    end do
-end do 
-
-!Relax interpolation at interior points 
-if ((Npoint .GT. 2) .AND. (cm2dopt%RBF_relax .NE. 0.0d0)) then 
-    do ii=2,Npoint-1
-        R(ii,ii) = R(ii,ii) + cm2dopt%RBF_relax/(mindist(ii)*R_sup)
-    end do 
-end if 
-return 
-end subroutine build_RBF_influence
 
 
 

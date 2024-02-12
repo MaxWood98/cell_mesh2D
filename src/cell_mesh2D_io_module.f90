@@ -7,7 +7,7 @@
 
 !Module
 module cellmesh2d_io_mod
-use cellmesh2d_data_mod
+use io_utilities
 contains
 
 !Read command arguments subroutine ===========================
@@ -148,6 +148,84 @@ end subroutine get_process_arguments
 
 
 
+!Set default options subroutine ===========================
+subroutine set_default_options(cm2dopt)
+implicit none 
+
+!Variables - Import
+type(cm2d_options) :: cm2dopt
+
+!Set general options 
+cm2dopt%dispt = 1
+cm2dopt%meshtype = 0
+cm2dopt%meshinout = 'out'
+cm2dopt%surface_dir = 'in'
+cm2dopt%boundary_dir = 'in'
+cm2dopt%meshfrmat = 'cutcell'
+
+!Set quadtree refinement options 
+cm2dopt%Nrefine = 11
+cm2dopt%NrefineB = 0
+cm2dopt%Ncell_max = 200000
+cm2dopt%Nrefine_flood_i = 10
+cm2dopt%Nrefine_flood_f = 10
+cm2dopt%Nrefine_flood_B = 2
+cm2dopt%far_field_bound = 15.0d0 
+cm2dopt%om_offset_x = 0.0d0 
+cm2dopt%om_offset_y = 0.0d0 
+
+!Set domain bound options
+cm2dopt%set_mbounds = 0
+cm2dopt%mxmin = -10.0d0
+cm2dopt%mxmax = 10.0d0
+cm2dopt%mymin = -10.0d0 
+cm2dopt%mymax = 10.0d0 
+
+!Set mesh cleaning options
+cm2dopt%EminLength = 1e-8
+cm2dopt%CminVol = 0.1d0 
+
+!Set geometry intersection options
+cm2dopt%NintEmax = 50
+cm2dopt%elenpad = 0.0d0 
+cm2dopt%intcointol = 1e-8
+
+!Set mesh surface options 
+cm2dopt%surface_type = 1
+cm2dopt%surfRcurvM = 1.0d0 
+cm2dopt%NPsinterp = 20 
+
+!Set mesh smoothing options 
+cm2dopt%Nsstype = 0
+cm2dopt%nlpflood = 5
+cm2dopt%nlpsmooth = 10
+
+!Set ADtree options
+cm2dopt%ADTpadding = 0.0d0
+cm2dopt%ADTmax_depth = 10 
+cm2dopt%ADTminNodedivsize = 10
+
+!Set gradient linking options 
+cm2dopt%glink_con = 0 
+cm2dopt%glink_type = 'rbf'
+cm2dopt%glink_nnn = 10
+cm2dopt%glink_nsmooth = 0 
+
+!Set radial basis function options 
+cm2dopt%RBF_rsup = 50.0d0 
+cm2dopt%RBF_relaxD = 0.05d0 
+cm2dopt%RBF_relaxP = 0.5d0 
+
+!Set boundary condition options 
+cm2dopt%set_customBCs = 0 
+cm2dopt%remFFzones = 0 
+cm2dopt%remNCzones = 0 
+cm2dopt%remISzones = 0 
+return 
+end subroutine set_default_options
+
+
+
 
 !Options import subroutine ===========================
 subroutine cm2d_import_options(cm2dopt)
@@ -156,161 +234,75 @@ implicit none
 !Variables - Import
 type(cm2d_options) :: cm2dopt
 
-!Variables - Local 
-character(len=100) :: rtemp 
-
 !Open file
 open(11,file=cm2dopt%optpath//'cell_mesh2d_options.dat')
 
-!Import options  
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%dispt
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set general options 
+call set_int_opt(cm2dopt%dispt,11,'condisp')
+call set_int_opt(cm2dopt%meshtype,11,'meshtype')
+call set_str_opt(cm2dopt%meshinout,11,'meshinout')
+call set_str_opt(cm2dopt%surface_dir,11,'surfnormdir')
+call set_str_opt(cm2dopt%boundary_dir,11,'bndrynormdir')
+call set_str_opt(cm2dopt%meshfrmat,11,'meshformat')
 
-read(11,*) cm2dopt%meshtype
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) rtemp
-allocate(character(len=len_trim(rtemp)) :: cm2dopt%meshinout)
-cm2dopt%meshinout = rtemp(1:len_trim(rtemp))
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) rtemp
-allocate(character(len=len_trim(rtemp)) :: cm2dopt%surface_dir)
-cm2dopt%surface_dir = rtemp(1:len_trim(rtemp))
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) rtemp
-allocate(character(len=len_trim(rtemp)) :: cm2dopt%boundary_dir)
-cm2dopt%boundary_dir = rtemp(1:len_trim(rtemp))
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) rtemp
-allocate(character(len=len_trim(rtemp)) :: cm2dopt%meshfrmat)
-cm2dopt%meshfrmat = rtemp(1:len_trim(rtemp))
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set quadtree refinement options 
+call set_int_opt(cm2dopt%Nrefine,11,'nqtrefine')
+call set_int_opt(cm2dopt%NrefineB,11,'nboostqtrefine')
+call set_int_opt(cm2dopt%Ncell_max,11,'ncellmax')
+call set_int_opt(cm2dopt%Nrefine_flood_i,11,'nadjfloodi')
+call set_int_opt(cm2dopt%Nrefine_flood_f,11,'nadjfloodf')
+call set_int_opt(cm2dopt%Nrefine_flood_B,11,'nadjfloodb')
+call set_real_opt(cm2dopt%far_field_bound,11,'farfielddist')
+call set_real_opt(cm2dopt%om_offset_x,11,'offsett_x')
+call set_real_opt(cm2dopt%om_offset_y,11,'offsett_y')
 
-read(11,*) cm2dopt%Nrefine
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%NrefineB
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%Ncell_max
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%Nrefine_flood_i
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%Nrefine_flood_f
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%Nrefine_flood_B
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%far_field_bound
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%om_offset_x
-read(11,*) cm2dopt%om_offset_y
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set domain bound options
+call set_int_opt(cm2dopt%set_mbounds,11,'forcebounds')
+call set_real_opt(cm2dopt%mxmin,11,'bound_xmin')
+call set_real_opt(cm2dopt%mxmax,11,'bound_xmax')
+call set_real_opt(cm2dopt%mymin,11,'bound_ymin')
+call set_real_opt(cm2dopt%mymax,11,'bound_ymax')
 
-read(11,*) cm2dopt%set_mbounds
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%mxmin,cm2dopt%mxmax,cm2dopt%mymin,cm2dopt%mymax
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set mesh cleaning options
+call set_real_opt(cm2dopt%EminLength,11,'eminlength')
+call set_real_opt(cm2dopt%CminVol,11,'cminvol')
 
-read(11,*) cm2dopt%EminLength
-read(11,*) !skip
-read(11,*) !skip 
-read(11,*) cm2dopt%CminVol
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set geometry intersection options
+call set_int_opt(cm2dopt%NintEmax,11,'enintmax')
+call set_real_opt(cm2dopt%elenpad,11,'eintpad')
+call set_real_opt(cm2dopt%intcointol,11,'intcointol')
 
-read(11,*) cm2dopt%NintEmax
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%elenpad
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%intcointol
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set mesh surface options 
+call set_int_opt(cm2dopt%surface_type,11,'surftype')
+call set_real_opt(cm2dopt%surfRcurvM,11,'scurvmult')
+call set_int_opt(cm2dopt%NPsinterp,11,'scurvnpnt')
 
-read(11,*) cm2dopt%surface_type
-read(11,*) !skip
-read(11,*) !skip 
-read(11,*) cm2dopt%surfRcurvM
-read(11,*) !skip
-read(11,*) !skip 
-read(11,*) cm2dopt%NPsinterp
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set mesh smoothing options 
+call set_int_opt(cm2dopt%Nsstype,11,'smoothingtype')
+call set_int_opt(cm2dopt%nlpflood,11,'smoothingnflood')
+call set_int_opt(cm2dopt%nlpsmooth,11,'smoothingniter')
 
-read(11,*) cm2dopt%Nsstype
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%nlpflood
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%nlpsmooth
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
+!Set ADtree options
+call set_real_opt(cm2dopt%ADTpadding,11,'adtpadding')
+call set_int_opt(cm2dopt%ADTmax_depth,11,'adtndimcycle')
+call set_int_opt(cm2dopt%ADTminNodedivsize,11,'adtmindivnsize')
 
-read(11,*) cm2dopt%ADTpadding
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%ADTmax_depth
+!Set gradient linking options 
+call set_int_opt(cm2dopt%glink_con,11,'glinkconstruct')
+call set_str_opt(cm2dopt%glink_type,11,'glinktype')
+call set_int_opt(cm2dopt%glink_nnn,11,'glinkrbfnpnt')
+call set_int_opt(cm2dopt%glink_nsmooth,11,'glinknpntsmooth')
 
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%glink_con
-read(11,*) !skip
-read(11,*) !skip
-! read(11,*) cm2dopt%glink_type
-read(11,*) rtemp
-allocate(character(len=len_trim(rtemp)) :: cm2dopt%glink_type)
-cm2dopt%glink_type = rtemp(1:len_trim(rtemp))
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%glink_nnn
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%glink_nsmooth
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%RBF_relax
+!Set radial basis function options 
+call set_real_opt(cm2dopt%RBF_rsup,11,'rbfrsup')
+call set_real_opt(cm2dopt%RBF_relaxD,11,'rbfrrelax')
+call set_real_opt(cm2dopt%RBF_relaxP,11,'rbfrelaxp')
 
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%set_customBCs
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%remFFzones
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%remNCzones
-read(11,*) !skip
-read(11,*) !skip
-read(11,*) cm2dopt%remISzones
+!Set boundary condition options 
+call set_int_opt(cm2dopt%set_customBCs,11,'setcustombcs')
+call set_int_opt(cm2dopt%remFFzones,11,'remffczones')
+call set_int_opt(cm2dopt%remNCzones,11,'remncczones')
+call set_int_opt(cm2dopt%remISzones,11,'remwallonlyzones')
 
 !Close file 
 close(11)
@@ -812,49 +804,5 @@ write(fh,*) ( max(0,volume_mesh%edge(i:min(i+nperline-1,volume_mesh%nedge),4)),N
 close(fh)
 return 
 end subroutine write_cell_dataPLT
-
-
-
-
-!F0.X format with leading zero function =========================
-function real2F0_Xstring(val,X) result(str)
-implicit none 
-
-!Result 
-character(len=:), allocatable :: str
-
-!Variables - Import 
-character(len=10) :: frmtI
-character(len=20), allocatable :: frmt
-integer(in) :: X,len_str
-real(dp) :: val
-
-!Construct format descriptor 
-write(frmtI,'(I0)') X
-frmt = '(F0.'//trim(frmtI)//')'
-
-!Find length of result string 
-if (abs(val) .LT. 1.0d0) then 
-    len_str = 1
-else
-    len_str = floor(log10(abs(val))) + 1
-end if 
-len_str = len_str + X + 2
-
-!Write to return string 
-allocate(character(len=len_str) :: str)
-write(str,trim(frmt)) val
-str = trim(str)
-
-!Assign leading zero if required
-if (str(1:1) == '.') then 
-    str = '0'//trim(str)
-elseif (str(1:2) == '-.') then 
-    len_str = len_trim(str)
-    str = '-0.'//str(3:len_str)
-end if 
-return 
-end function real2F0_Xstring
-
 
 end module cellmesh2d_io_mod

@@ -17,6 +17,9 @@ type(surface_data) :: surface_mesh
 type(vol_mesh_data) :: volume_mesh
 real(dp), dimension(:,:), allocatable :: gradient_vol,gradient_surf
 
+!Set option defaults 
+call set_default_options(cm2dopt)
+
 !Get command arguments 
 call get_process_arguments(cm2dopt)
 
@@ -29,7 +32,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.7.0 || 18/01/2024         |'
+    write(*,'(A)')'|        Version 0.8.0 || 12/02/2024         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'
@@ -82,7 +85,7 @@ elseif (cm2dopt%mode == 'mesh') then !mesh generation mode
 
     !Load object surface data
     if (cm2dopt%dispt == 1) then
-        write(*,*) '--> importing geometry data'
+        write(*,'(A)') '--> importing geometry data'
     end if
     call import_surface_geometry(surface_mesh,cm2dopt)
 
@@ -147,7 +150,7 @@ elseif (cm2dopt%mode == 'project') then !volume to surface gradient projection m
     if (cm2dopt%glink_type == 'rbf') then 
         call project_gradients_RBF(gradient_surf,gradient_vol,volume_mesh,surface_mesh,4_in,10_in,0.0d0,cm2dopt)
     elseif (cm2dopt%glink_type == 'int') then 
-        call project_gradients_INT(gradient_surf,gradient_vol,volume_mesh,surface_mesh,cm2dopt)
+        call project_gradients_INT(gradient_surf,gradient_vol,volume_mesh,surface_mesh)
     end if 
 
     !Export surface projected gradients 

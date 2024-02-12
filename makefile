@@ -11,6 +11,7 @@ OBJDIR = obj/
 #list object file names -> 1 for each .f90 in the correct compilation order
 OBJS = $(addprefix $(OBJDIR), \
 		cell_mesh2D_data_module.o\
+		io_utilities_module.o\
 		cell_mesh2D_io_module.o\
 		cell_mesh2D_utilities_module.o\
 		cell_mesh2D_AD_tree_module.o\

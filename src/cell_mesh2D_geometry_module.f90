@@ -2,14 +2,14 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 8.2
-!Updated 18-01-2024
+!Version 8.3
+!Updated 12-02-2024
 
 !Geometry subroutines module
 module cellmesh2d_geometry_mod
 use cellmesh2d_adtree_mod
 use cellmesh2d_utilities_mod
-use ieee_arithmetic !, only: ieee_value,IEEE_QUIET_NAN
+
 contains
 
 
@@ -360,72 +360,9 @@ end function line_line_intersection_loc_inl1
 
 
 
-!Wendland C2 function ===========================
-function wendlandc2(d,Rs) result(W)
-implicit none 
-
-!Variables - Import
-real(dp) :: d,Rs,W
-
-!Set function value 
-d = d/Rs 
-if (d .GE. 1.0d0) then 
-    W = 0.0d0 
-else
-    W = ((1.0d0 - d)**4)*(4.0d0*d + 1.0d0)
-end if 
-return 
-end function wendlandc2
-
-
-
-
-!Wendland C2 first gradient function ===========================
-function wendlandc2_gradient1(s_p,s_b,Rs) result(W)
-implicit none 
-
-!Variables - Import
-real(dp) :: s_p,s_b,Rs,W
-
-!Variables - Local
-real(dp) :: d
-
-!Set function value 
-d = abs(s_p - s_b)/Rs 
-if (d .GE. 1.0d0) then 
-    W = 0.0d0 
-else
-    W = (4.0d0*(d - 1.0d0)**4 + 4.0d0*(4.0d0*d + 1.0d0)*((d - 1.0d0)**3))*sign(1.0d0,s_p-s_b)
-end if 
-return 
-end function wendlandc2_gradient1
-
-
-
-
-!Wendland C2 second gradient function ===========================
-function wendlandc2_gradient2(d,Rs) result(W)
-implicit none 
-
-!Variables - Import
-real(dp) :: d,Rs,W
-
-!Set function value 
-d = d/Rs 
-if (d .GE. 1.0d0) then 
-    W = 0.0d0 
-else
-    W = 32.0d0*((d - 1.0d0)**3) + 12.0d0*(4.0d0*d + 1.0d0)*((d - 1.0d0)**2)
-end if 
-return 
-end function wendlandc2_gradient2
-
-
-
-
 !Local radius of curvature function ===========================
-function surface_rcurv(Ninterp,interp_stencil,vertices) result(Rcurv) 
-use ieee_arithmetic
+function surface_rcurv(Ninterp,interp_stencil,vertices,cm2dopt) result(Rcurv) 
+! use ieee_arithmetic
 implicit none 
 !Evaluates the surface radius of curvature at the central vertex of interp_stencil
 
@@ -434,28 +371,33 @@ integer(in) :: Ninterp
 integer(in), dimension(:) :: interp_stencil
 real(dp) :: Rcurv
 real(dp), dimension(:,:) :: vertices
+type(cm2d_options) :: cm2dopt
 
 !Variables - Local
 integer(in) :: ii,jj
 integer(in) :: interp_pnt
+integer(in) :: point_list(Ninterp)
 real(dp) :: Rs,dx_ds,dy_ds,dx_ds_2,dy_ds_2,denom
-real(dp) :: s(Ninterp),sdelta(Ninterp)
+real(dp) :: sdelta(Ninterp)
 real(dp) :: vtx_l(Ninterp,2),Rd(Ninterp,Ninterp),Rdi(Ninterp,Ninterp)
-real(dp) :: gamma_x(Ninterp,1),gamma_y(Ninterp,1)
+real(dp) :: gamma_x(Ninterp,1),gamma_y(Ninterp,1),s(Ninterp,1)
 ! real(dp) :: spi,vpi(2)
 
 !Set interpolation point 
 interp_pnt = ((Ninterp - 1)/2) + 1
 
 !Build local coordinate
-s(:) = 0.0d0 
+s(:,1) = 0.0d0 
 do ii=2,Ninterp
-    s(ii) = norm2(vertices(interp_stencil(ii),:) - vertices(interp_stencil(ii-1),:)) + s(ii-1)
+    s(ii,1) = norm2(vertices(interp_stencil(ii),:) - vertices(interp_stencil(ii-1),:)) + s(ii-1,1)
+end do 
+do ii=1,Ninterp
+    point_list(ii) = ii
 end do 
 
 !Check for coincident vertices 
 do ii=2,Ninterp
-    if (abs(s(ii) - s(ii-1)) == 0.0d0) then 
+    if (abs(s(ii,1) - s(ii-1,1)) == 0.0d0) then 
         print *, '** detected two co-incident surface vertices ',interp_stencil(ii),interp_stencil(ii-1)
         Rcurv = 0.0d0 
         return 
@@ -471,10 +413,10 @@ end do
 Rd(:,:) = 0.0d0 
 do ii=1,Ninterp
     do jj=1,Ninterp
-        Rd(ii,jj) = abs(s(ii) - s(jj))
+        Rd(ii,jj) = abs(s(ii,1) - s(jj,1))
     end do 
 end do
-Rs = 80.0d0*s(Ninterp) 
+Rs = cm2dopt%RBF_rsup*s(Ninterp,1) 
 do ii=1,Ninterp
     do jj=1,Ninterp
         Rd(ii,jj) = wendlandC2(Rd(ii,jj),Rs)
@@ -492,14 +434,14 @@ gamma_y(:,1) = matmul(Rdi,vtx_l(:,2))
 
 !First gradients in x and y
 do ii=1,Ninterp
-    sdelta(ii) = wendlandc2_gradient1(s(interp_pnt),s(ii),Rs)
+    sdelta(ii) = wendlandc2_gradient1(s(interp_pnt,1),s(ii,1),Rs)
 end do 
 dx_ds = sum(sdelta(:)*gamma_x(:,1))
 dy_ds = sum(sdelta(:)*gamma_y(:,1))
 
 !Second gradients in x and y
 do ii=1,Ninterp
-    sdelta(ii) = wendlandc2_gradient2(abs(s(interp_pnt)-s(ii)),Rs)
+    sdelta(ii) = wendlandc2_gradient2(abs(s(interp_pnt,1)-s(ii,1)),Rs)
 end do 
 dx_ds_2 = sum(sdelta(:)*gamma_x(:,1))
 dy_ds_2 = sum(sdelta(:)*gamma_y(:,1))

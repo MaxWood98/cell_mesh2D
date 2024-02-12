@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.6
-!Updated 15-08-2023
+!Version 0.7
+!Updated 12-02-2024
 
 !Module
 module cellmesh2d_data_mod
@@ -36,10 +36,10 @@ end type cell_data
 type cm2d_options
     character(len=:), allocatable :: mode,iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshfrmat,glink_type
     integer(in) :: Nrefine,NrefineB,Ncell_max,Nrefine_flood_i,Nrefine_flood_f,Nrefine_flood_b,meshtype
-    integer(in) :: dispt,NintEmax,glink_con,glink_nnn,glink_nsmooth,ADTmax_depth,nlpflood,nlpsmooth,set_mbounds
+    integer(in) :: dispt,NintEmax,glink_con,glink_nnn,glink_nsmooth,ADTmax_depth,ADTminNodedivsize,nlpflood,nlpsmooth,set_mbounds
     integer(in) :: set_customBCs,remFFzones,remISzones,remNCzones,Nsstype,Nzone_cBC,NPsinterp,surface_type,cm2dfailure
-    real(dp) :: ADTpadding,far_field_bound,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y,RBF_relax
-    real(dp) :: mxmin,mxmax,mymin,mymax
+    real(dp) :: ADTpadding,far_field_bound,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y
+    real(dp) :: mxmin,mxmax,mymin,mymax,RBF_relaxP,RBF_relaxD,RBF_rsup
     integer(in), dimension(:), allocatable :: BC_zone_bc
     real(dp), dimension(:,:), allocatable :: BC_zone_coords
 end type cm2d_options

@@ -4,7 +4,7 @@ clearvars
 %Points
 vtx = [0 0;
        1 1;
-       1.02 -2; 
+       2.9 -2; 
        3 1; 
        5 0];
 
@@ -17,6 +17,20 @@ for ii=1:Npnts
     mind = 100000000;
     for jj=1:Npnts
         R(ii,jj) = norm(vtx(ii,1) - vtx(jj,1));
+
+
+
+        % R(ii,jj) = abs(log(norm(vtx(ii,1) - vtx(jj,1))));
+        % 
+        % if ii == jj
+        %     R(ii,jj) = 0;
+        % end
+
+        % if ii ~= jj 
+        %     R(ii,jj) = max(norm(vtx(ii,1) - vtx(jj,1)),0.1);
+        % else
+        %     R(ii,jj) = 0;
+        % end
         if R(ii,jj) > 0 && R(ii,jj) < mind
             mind = R(ii,jj); 
         end
@@ -24,23 +38,77 @@ for ii=1:Npnts
     mindist(ii) = mind;
 end
 
+Rdist = R;
+
+maxdist = max(R,[],'all');
+Rs = 50.5*maxdist;
 
 
-Rs = 50*max(R,[],'all');
+%Smooth interpolation on nearby points and evaluate RBF
 
+dmin = 0.1;
+Wdpen = 0.1;
 
 for ii=1:Npnts
     for jj=1:Npnts
+        
+        if ii ~= jj %Smooth
+            if R(ii,jj) <= dmin*maxdist
+                ii
+                jj
+                R(ii,jj) = R(ii,jj) + Wdpen*(R(ii,jj) - dmin*maxdist)^2;
+            end
+        end
+
         R(ii,jj) = wendlandc2(R(ii,jj),Rs);
     end
 end
 
-%Relax interpolation at interior points 
-Rsmooth = 1e-7;
-for ii=2:Npnts-1
-    R(ii,ii) = R(ii,ii) + Rsmooth/(mindist(ii)*Rs);
-end
 
+% midadj = 0.05;
+% maxadj = 1 - midadj;
+% for ii=1:Npnts
+%     for jj=1:Npnts
+%         if ii ~= jj 
+%             if R(ii,jj) > maxadj
+%                 R(ii,jj) = 0.5*(maxadj + R(ii,jj));
+%             end
+%         end
+%     end
+% end
+
+
+% %Relax interpolation at interior points 
+% Rsmooth = 0.01;%1e-1;
+% for ii=2:Npnts-1
+%     % R(ii,ii) = R(ii,ii) - Rsmooth;%/(mindist(ii)*Rs);
+% 
+%     % Rrow = R(ii,:);
+%     % Rrow = Rrow(Rrow>0);
+%     % min(Rrow)
+%     % R(ii,ii) = R(ii,ii) - Rsmooth/(min(Rrow));
+% 
+%     % R(ii,ii) = 0.9;
+% end
+
+% Dw = 0.1;
+% R(2,3) = R(2,3)*(1 - Dw/Rs);
+% R(3,2) = R(3,2)*(1 - Dw/Rs);
+% 
+% 
+% 
+% dminfrac = 0.01;
+
+
+
+
+
+
+
+
+
+% R(2,2) = 0.99;
+% R(3,3) = 0.99;
 
 
 %Interpolate
@@ -80,7 +148,7 @@ grid on
 function [W] = wendlandc2(d,Rs)
     d = d/Rs;
     if d >= 1
-        W = 0;
+        W = 0.0;
     else
         W = ((1 - d)^4)*(4*d + 1);
     end

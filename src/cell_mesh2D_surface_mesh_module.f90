@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.5
-!Updated 07-11-2023
+!Version 0.6
+!Updated 12-02-2024
 
 !Module
 module cellmesh2d_surface_mod
@@ -239,7 +239,7 @@ do vv=1,surface_mesh%nvtx
         end do 
 
         !Evaluate local radius of curvature at this vertex
-        surface_mesh%vtx_rcurv(vv) = surface_rcurv(Ninterp,interp_stencil,surface_mesh%vertices)
+        surface_mesh%vtx_rcurv(vv) = surface_rcurv(Ninterp,interp_stencil,surface_mesh%vertices,cm2dopt)
         surface_mesh%vtx_rcurv(vv) = surface_mesh%vtx_rcurv(vv)/cm2dopt%surfRcurvM
     end if 
 end do 

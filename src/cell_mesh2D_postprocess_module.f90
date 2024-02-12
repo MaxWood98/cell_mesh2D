@@ -996,7 +996,11 @@ do vv=1,volume_mesh%nvtx
         segtgt = volume_mesh%vtx_surfseg(vv)
         vs1(:) = surface_mesh%vertices(surface_mesh%faces(segtgt,1),:)
         vs2(:) = surface_mesh%vertices(surface_mesh%faces(segtgt,2),:)
-        segfrac = norm2(volume_mesh%vertices(vv,:) - vs1(:))/norm2(vs2(:) - vs1(:))
+        if (norm2(vs2(:) - vs1(:)) .LE. 1e-12) then 
+            segfrac = 0.5d0 
+        else
+            segfrac = norm2(volume_mesh%vertices(vv,:) - vs1(:))/(norm2(vs2(:) - vs1(:)))
+        end if 
         volume_mesh%surf_vtx_segfrac(Nvsurf) = segfrac
     end if
 end do 
