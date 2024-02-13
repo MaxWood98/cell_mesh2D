@@ -105,46 +105,6 @@ end if
 return 
 end subroutine get_process_arguments
 
-! subroutine get_process_arguments(cm2dopt)
-! implicit none
-
-! !Variables - Import
-! type(cm2d_options) :: cm2dopt
-    
-! !Variables - Local 
-! integer(in) :: nargs
-! integer(in32) :: arglen,argstat
-
-! !Check and process supplied command arguments
-! nargs = command_argument_count()
-! if (nargs == 0) then !Use default paths and filename
-!     allocate(character(len=3) :: cm2dopt%iopath)
-!     cm2dopt%iopath = 'io/'
-!     allocate(character(len=3) :: cm2dopt%optpath)
-!     cm2dopt%optpath = 'io/'
-!     allocate(character(len=23) :: cm2dopt%surfacename)
-!     cm2dopt%surfacename = 'cell_mesh2d_surface.dat'
-! elseif (nargs == 1) then !Use default paths and specified filename
-!     allocate(character(len=3) :: cm2dopt%iopath)
-!     cm2dopt%iopath = 'io/'
-!     allocate(character(len=3) :: cm2dopt%optpath)
-!     cm2dopt%optpath = 'io/'
-!     call get_command_argument(number=1, length=arglen)
-!     allocate(character(len=arglen) :: cm2dopt%surfacename)
-!     call get_command_argument(number=1, value=cm2dopt%surfacename, status=argstat)
-! else !Use specified paths and filename 
-!     call get_command_argument(number=1, length=arglen)
-!     allocate(character(len=arglen) :: cm2dopt%surfacename)
-!     call get_command_argument(number=1, value=cm2dopt%surfacename, status=argstat)
-!     call get_command_argument(number=2, length=arglen)
-!     allocate(character(len=arglen) :: cm2dopt%optpath)
-!     call get_command_argument(number=2, value=cm2dopt%optpath, status=argstat)
-!     call get_command_argument(number=3, length=arglen)
-!     allocate(character(len=arglen) :: cm2dopt%iopath)
-!     call get_command_argument(number=3, value=cm2dopt%iopath, status=argstat)
-! end if 
-! return 
-! end subroutine get_process_arguments
 
 
 

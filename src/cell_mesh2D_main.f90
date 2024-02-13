@@ -148,7 +148,8 @@ elseif (cm2dopt%mode == 'project') then !volume to surface gradient projection m
         write(*,'(A)') '--> projecting volume flow gradients to the surface geometry'
     end if
     if (cm2dopt%glink_type == 'rbf') then 
-        call project_gradients_RBF(gradient_surf,gradient_vol,volume_mesh,surface_mesh,4_in,10_in,0.0d0,cm2dopt)
+        call project_gradients_RBF(gradient_surf,gradient_vol,volume_mesh,surface_mesh,4_in,&
+        cm2dopt%ADTminNodedivsize,0.0d0,cm2dopt)
     elseif (cm2dopt%glink_type == 'int') then 
         call project_gradients_INT(gradient_surf,gradient_vol,volume_mesh,surface_mesh)
     end if 
