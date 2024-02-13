@@ -507,7 +507,7 @@ global_target_pad = 0.0d0
 Ndim = 4
 
 !Set minimum divisible node size within the AD tree 
-node_minDIVsize = 10
+node_minDIVsize = cm2dopt%ADTminNodedivsize
 
 !Construct 4D bounding box coordinates for each face in the surface mesh
 allocate(tvtx(surface_mesh%nfcs,4))
