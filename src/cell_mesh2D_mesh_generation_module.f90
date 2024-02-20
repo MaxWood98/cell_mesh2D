@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 2.0
-!Updated 12-02-2024
+!Version 2.2
+!Updated 20-02-2024
 
 !Module
 module cellmesh2d_mesh_generation_mod
@@ -14,6 +14,7 @@ use cellmesh2d_postprocess_mod
 use cellmesh2d_mesh_build_exact_mod
 use cellmesh2d_gradient_coupling_mod
 contains
+
 
 !cell_mesh2d mesh construction subroutine ================================================
 subroutine cell_mesh2d_mesh(volume_mesh,surface_mesh,cm2dopt)
@@ -66,17 +67,7 @@ volume_mesh%nvtx = 0
 volume_mesh%nedge = 0 
 volume_mesh%ncell = 0 
 
-!Property calculation -------------------------------------------------------
-if (cm2dopt%dispt == 1) then
-    write(*,'(A)') '--> constructing surface geometry parameters'
-end if
-
-!Preprocess surface mesh 
-call preprocess_surface_mesh(surface_mesh,cm2dopt)
-if (cm2dopt%cm2dfailure == 1) then
-    return 
-end if 
-
+!Display -------------------------------------------------------
 !Global object bounds
 obj_max_x = maxval(surface_mesh%vertices(:,1))
 obj_max_y = maxval(surface_mesh%vertices(:,2))
@@ -92,7 +83,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)') ' '
     write(*,'(A)') '== Properties =========================='
     write(*,"(A,I0)") '   number of vertices = ', surface_mesh%nvtx
-    write(*,"(A,A,A,A)") '   geometry dimensions (dx/dy) = ', &
+    write(*,"(A,A,A,A)") '   geometry dimensions (x/y) = ', &
     real2F0_Xstring(obj_max_x - obj_min_x,8_in),' / ', real2F0_Xstring(obj_max_y - obj_min_y,8_in)
     write(*,'(A)') '== Properties =========================='
     write(*,'(A)') ' '
@@ -197,7 +188,7 @@ end if
 call correct_bisected_cells(volume_mesh,cm2dopt)
 
 !Clean mesh by removing short edges and sliver cells 
-call clean_mesh_shortE(volume_mesh,cm2dopt)
+call clean_mesh_shortE(volume_mesh,cm2dopt,cm2dopt%EminLength) 
 nmiter = 10 !volume_mesh%ncell !set maximum merging iterations 
 nifail = 0 
 do ii=1,nmiter
@@ -238,6 +229,9 @@ if (cm2dopt%surface_type == 0) then
     call simplify_surface(volume_mesh)
 end if 
 
+!Collapse short surface edges 
+call clean_mesh_shortE(volume_mesh,cm2dopt,cm2dopt%sEminLength,-1_in)
+
 !Merge surface adjacent cells consisting of only two edges after simplification collapse
 call merge_2edge_surfcells(Nmerge,volume_mesh)
 if (cm2dopt%dispt == 1) then
@@ -246,9 +240,6 @@ end if
 
 !Remap cell indecies 
 call remap_cell_indecies(volume_mesh)
-
-!Build surface vertex mappings 
-call build_surface_links(volume_mesh,surface_mesh)
 
 !Flip surface and boundary normals if requested (both are constructed in state 'in')
 if (cm2dopt%surface_dir == 'out') then 
@@ -263,19 +254,21 @@ if (cm2dopt%boundary_dir == 'out') then
 end if 
 
 !Restructure mesh for SU2 output formats 
-if (cm2dopt%meshfrmat == 'su2_cutcell') then 
+if (cm2dopt%meshtype == 'su2_cutcell') then 
     call split_vlnc_gt4cells(volume_mesh)
     call remap_cell_indecies(volume_mesh)
-    call build_mesh_cells(volume_mesh)
-elseif (cm2dopt%meshfrmat == 'su2_dual') then 
+elseif (cm2dopt%meshtype == 'su2_dual') then 
     call construct_dual_mesh(volume_mesh)
+    call split_vlnc_gt4cells(volume_mesh)
     call deform_mesh2surface(volume_mesh,surface_mesh,surface_adtree)
     call remap_cell_indecies(volume_mesh)
-    call build_mesh_cells(volume_mesh)
 end if 
 
+!Build surface vertex mappings 
+call build_surface_links(volume_mesh,surface_mesh)
+
 !Apply near surface mesh smoothing 
-if ((cm2dopt%Nsstype == 1) .OR. (cm2dopt%meshtype == 1)) then 
+if (cm2dopt%Nsstype == 1) then 
     call nearsurf_lap_smooth(volume_mesh,cm2dopt,MaxValence)
 end if 
 
@@ -313,38 +306,6 @@ if (minval(Cvol) .LE. 0.0d0) then
 end if  
 return 
 end subroutine cell_mesh2d_mesh
-
-
-
-
-!Cell volumes subroutine ===========================
-subroutine get_cell_volumes(Cvol,volume_mesh)
-implicit none 
-
-!Variables - Import
-real(dp), dimension(:), allocatable :: Cvol
-type(vol_mesh_data) :: volume_mesh
-
-!Variables - Local 
-integer(in) :: ii
-real(dp) :: AEdge
-
-if (allocated(Cvol)) then 
-    deallocate(Cvol)
-end if
-allocate(Cvol(volume_mesh%ncell))
-Cvol(:) = 0.0d0
-do ii=1,volume_mesh%nedge
-    AEdge = Asegment(volume_mesh%vertices(volume_mesh%edge(ii,1),:),volume_mesh%vertices(volume_mesh%edge(ii,2),:))
-    if (volume_mesh%edge(ii,4) .GT. 0) then
-        Cvol(volume_mesh%edge(ii,4)) = Cvol(volume_mesh%edge(ii,4)) - AEdge
-    end if 
-    if (volume_mesh%edge(ii,3) .GT. 0) then
-        Cvol(volume_mesh%edge(ii,3)) = Cvol(volume_mesh%edge(ii,3)) + AEdge
-    end if
-end do
-return 
-end subroutine get_cell_volumes
 
 
 end module cellmesh2d_mesh_generation_mod

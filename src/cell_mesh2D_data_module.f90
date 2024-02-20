@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.7
-!Updated 12-02-2024
+!Version 0.8
+!Updated 20-02-2024
 
 !Module
 module cellmesh2d_data_mod
@@ -29,17 +29,20 @@ end type surfFvolinterp
 !Cell data type 
 type cell_data 
     integer(in) :: nvtx,nedge 
-    integer(in), dimension(:), allocatable :: vertices,edges
+    integer(in), dimension(:), allocatable :: vertices,edges,boundary_condition
 end type cell_data
 
 !Options data type
 type cm2d_options
-    character(len=:), allocatable :: mode,iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshfrmat,glink_type
-    integer(in) :: Nrefine,NrefineB,Ncell_max,Nrefine_flood_i,Nrefine_flood_f,Nrefine_flood_b,meshtype
+    character(len=:), allocatable :: mode,iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshtype
+    character(len=:), allocatable :: glink_type,build_inflayer,srfinclean
+    integer(in) :: Nrefine,NrefineB,Ncell_max,Nrefine_flood_i,Nrefine_flood_f,Nrefine_flood_b,inflayer_nlayer
+    integer(in) :: inflayer_nintstep_max,inflayer_nbclinesearch
     integer(in) :: dispt,NintEmax,glink_con,glink_nnn,glink_nsmooth,ADTmax_depth,ADTminNodedivsize,nlpflood,nlpsmooth,set_mbounds
     integer(in) :: set_customBCs,remFFzones,remISzones,remNCzones,Nsstype,Nzone_cBC,NPsinterp,surface_type,cm2dfailure
-    real(dp) :: ADTpadding,far_field_bound,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y
-    real(dp) :: mxmin,mxmax,mymin,mymax,RBF_relaxP,RBF_relaxD,RBF_rsup
+    real(dp) :: ADTpadding,far_field_bound,sEminLength,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y
+    real(dp) :: mxmin,mxmax,mymin,mymax,RBF_relaxP,RBF_relaxD,RBF_rsup,vtx_sharp_dpval
+    real(dp) :: inflayer_height,inflayer_eveningstepsize,inflayer_dvstepsize,inflayer_h0,inflayer_cvxep,inflayer_cvxdp
     integer(in), dimension(:), allocatable :: BC_zone_bc
     real(dp), dimension(:,:), allocatable :: BC_zone_coords
 end type cm2d_options
@@ -48,7 +51,7 @@ end type cm2d_options
 type vol_mesh_data
     integer(in) :: nvtx,nedge,ncell,nvtx_surf
     integer(in), dimension(:), allocatable :: cell_level,cell_qtidx,vtx_type,vtx_surfseg
-    integer(in), dimension(:), allocatable :: surf_vtx,surf_vtx_seg
+    integer(in), dimension(:), allocatable :: surf_vtx,surf_vtx_seg,surf_linkindex
     integer(in), dimension(:,:), allocatable :: V2E
     integer(in), dimension(:,:), allocatable :: edge !v1 v2 cellL cellR
     real(dp), dimension(:), allocatable :: surf_vtx_segfrac
@@ -60,10 +63,11 @@ end type vol_mesh_data
 !Surface data type 
 type surface_data
     integer(in) :: nvtx,nfcs,nvtxf
-    integer(in), dimension(:), allocatable :: vtx_active
+    integer(in), dimension(:), allocatable :: vtx_active,vtx_sharp
     integer(in), dimension(:,:), allocatable :: faces,v2f,smvtx2vmedge
     real(dp), dimension(:), allocatable :: face_rcurv,vtx_rcurv,vtx_rsearch
-    real(dp), dimension(:,:), allocatable :: vertices,vertices_full
+    real(dp), dimension(:,:), allocatable :: vertices,vertices_full,normals,vertices0
+    real(dp), dimension(:,:,:), allocatable :: vertices_layer
 end type surface_data
 
 !Quadtree data type 
@@ -84,5 +88,13 @@ type edgeint
     real(dp), dimension(:), allocatable :: intfrac
     real(dp), dimension(:,:), allocatable :: intloc 
 end type edgeint 
+
+!Mesh data data type 
+type meshdata 
+    integer(in), dimension(:), allocatable :: vtx_vlnc,cell_nedge,bc_active
+    integer(in), dimension(:,:), allocatable :: vtx_2_cell,vtx_v2v,vtx_v2e,cell2edge
+    real(dp), dimension(:), allocatable :: cell_area,edgedx,edgedy,edgedxd,edgedyd
+    real(dp), dimension(:,:), allocatable :: cell_midp,edge_midp,cell_vtx_W
+end type meshdata
 
 end module cellmesh2d_data_mod

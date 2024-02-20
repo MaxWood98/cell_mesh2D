@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.6
-!Updated 12-02-2024
+!Version 0.7
+!Updated 20-02-2024
 
 !Module
 module cellmesh2d_surface_mod
@@ -24,12 +24,14 @@ integer(in) :: ii
 integer(in) :: nrem
 
 !Clean surface mesh to remove zero length segments 
-do ii=1,10
-    call clean_surface(surface_mesh,cm2dopt,nrem)
-    if (nrem == 0) then 
-        exit 
-    end if 
-end do 
+if (cm2dopt%srfinclean == 'yes') then 
+    do ii=1,10
+        call clean_surface(surface_mesh,cm2dopt,nrem)
+        if (nrem == 0) then 
+            exit 
+        end if 
+    end do 
+end if 
 
 !Orient surface mesh for positive object volume (this ensures normal vector convention is correct)
 call orient_surface(surface_mesh,cm2dopt)
@@ -42,8 +44,115 @@ end if
 
 !Evaluate surface mesh segment curvature 
 call evaluate_surf_rcurv(surface_mesh,cm2dopt)
+
+!Evaluate surface normal vectors 
+call evaluate_surface_normals(surface_mesh%normals,surface_mesh,surface_mesh%vertices)
+
+!Tag sharp vertices 
+call tag_sharp_vertices(surface_mesh,cm2dopt)
 return 
 end subroutine preprocess_surface_mesh
+
+
+
+
+!Find sharp vertices ===========================
+subroutine tag_sharp_vertices(surface_mesh,cm2dopt)
+implicit none 
+
+!Variables - Import
+type(cm2d_options) :: cm2dopt
+type(surface_data) :: surface_mesh
+
+!Variables - Local 
+integer(in) :: ii
+integer(in) :: fn,fp
+real(dp) :: nmag,faceang
+real(dp) :: fnormal(surface_mesh%nfcs,2)
+
+!Allocate sharp array 
+allocate(surface_mesh%vtx_sharp(surface_mesh%nvtx))
+surface_mesh%vtx_sharp(:) = 0
+
+!Find face normals 
+do ii=1,surface_mesh%nfcs
+    fnormal(ii,:) = Nsegment(surface_mesh%vertices(surface_mesh%faces(ii,1),:),&
+                             surface_mesh%vertices(surface_mesh%faces(ii,2),:))
+    nmag = norm2(fnormal(ii,:))
+    if (nmag .NE. 0.0d0) then 
+        fnormal(ii,:) = fnormal(ii,:)/nmag
+    end if 
+end do 
+
+!Find sharp vertices 
+do ii=1,surface_mesh%nvtx
+
+    !Adjacent faces
+    fn = surface_mesh%v2f(ii,1)
+    fp = surface_mesh%v2f(ii,2)
+
+    !Angle between faces
+    faceang = dot_product(fnormal(fn,:),fnormal(fp,:))
+
+    !Tag as sharp if required
+    if (faceang .LE. cm2dopt%vtx_sharp_dpval) then 
+        surface_mesh%vtx_sharp(ii) = 1
+        if (cm2dopt%dispt == 1) then
+            write(*,'(A,I0,A)') '    {setting sharp vertex -> ',ii,'}'
+        end if
+    end if 
+end do 
+return     
+end subroutine tag_sharp_vertices
+
+
+
+
+!Evaluate surface normal vectors =========================== 
+subroutine evaluate_surface_normals(vnormal,surface_mesh,vertices)
+implicit none 
+
+!System data
+type(surface_data) :: surface_mesh
+
+!Variables - Import
+real(dp) :: vertices(surface_mesh%nvtx,2)
+real(dp), dimension(:,:), allocatable :: vnormal
+
+!Variables - Local 
+integer(in) :: ii
+real(dp) :: nmag
+real(dp) :: fnormal(surface_mesh%nfcs,2)
+
+!Allocate
+if (.NOT.allocated(vnormal)) then 
+    allocate(vnormal(surface_mesh%nvtx,2))
+end if 
+
+!Evaluate face normals 
+do ii=1,surface_mesh%nfcs
+    fnormal(ii,:) = Nsegment(vertices(surface_mesh%faces(ii,1),:),&
+                             vertices(surface_mesh%faces(ii,2),:))
+    nmag = norm2(fnormal(ii,:))
+    if (nmag .NE. 0.0d0) then 
+        fnormal(ii,:) = fnormal(ii,:)/nmag
+    end if 
+end do 
+
+!Evaluate vertex normals 
+vnormal(:,:) = 0.0d0 
+do ii=1,surface_mesh%nfcs
+    vnormal(surface_mesh%faces(ii,1),:) = vnormal(surface_mesh%faces(ii,1),:) + fnormal(ii,:)
+    vnormal(surface_mesh%faces(ii,2),:) = vnormal(surface_mesh%faces(ii,2),:) + fnormal(ii,:)
+end do 
+do ii=1,surface_mesh%nvtx
+    nmag = norm2(vnormal(ii,:))
+    if (nmag .NE. 0.0d0) then 
+        vnormal(ii,:) = vnormal(ii,:)/nmag
+    end if 
+end do 
+return 
+end subroutine evaluate_surface_normals
 
 
 

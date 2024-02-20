@@ -22,6 +22,9 @@ OBJS = $(addprefix $(OBJDIR), \
 		cell_mesh2D_postprocess_module.o\
 		cell_mesh2D_gradient_coupling_module.o\
 		cell_mesh2D_mesh_generation_module.o \
+		cell_mesh2D_distancefield_module.o\
+		cell_mesh2D_mind_module.o\
+		cellmesh2d_inflation_layer_module.o\
 		cell_mesh2D_main.o \
 		)
 

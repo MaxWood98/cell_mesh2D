@@ -7,6 +7,8 @@
 
 !Main
 program cell_mesh2d
+use cellmesh2d_mind_mod
+use cellmesh2d_inflation_layer_mod
 use cellmesh2d_mesh_generation_mod  
 implicit none
 
@@ -32,7 +34,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.8.0 || 12/02/2024         |'
+    write(*,'(A)')'|        Version 0.8.1 || 16/02/2024         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'
@@ -50,19 +52,19 @@ if (cm2dopt%mode == 'check') then !geometry check mode
 
     !Load object surface data
     if (cm2dopt%dispt == 1) then
-        write(*,*) '--> importing geometry data'
+        write(*,'(A)') '--> importing geometry data'
     end if
     call import_surface_geometry(surface_mesh,cm2dopt)
 
     !Preprocess surface geometry 
     if (cm2dopt%dispt == 1) then
-        write(*,*) '--> preprocessing geometry data'
+        write(*,'(A)') '--> preprocessing geometry data'
     end if
     call preprocess_surface_mesh(surface_mesh,cm2dopt)
 
     !Check for self intersections 
     if (cm2dopt%dispt == 1) then
-        write(*,*) '--> testing for self intersections'
+        write(*,'(A)') '--> testing for self intersections'
     end if
     is_selfintersecting = is_self_intersecting(surface_mesh,cm2dopt)
     if (cm2dopt%dispt == 1) then
@@ -89,8 +91,47 @@ elseif (cm2dopt%mode == 'mesh') then !mesh generation mode
     end if
     call import_surface_geometry(surface_mesh,cm2dopt)
 
-    !Construct mesh
-    call cell_mesh2d_mesh(volume_mesh,surface_mesh,cm2dopt)
+    !Preprocess surface mesh 
+    if (cm2dopt%dispt == 1) then
+        write(*,'(A)') '--> preprocessing surface mesh'
+    end if
+    call preprocess_surface_mesh(surface_mesh,cm2dopt)
+    if (cm2dopt%cm2dfailure == 1) then
+        call export_status(cm2dopt)
+        stop 
+    end if 
+
+    !If inflation layer is requested then grow geometry to required height 
+    if (cm2dopt%build_inflayer == 'yes') then 
+        if (cm2dopt%dispt == 1) then
+            write(*,'(A)') '--> inflating surface'
+        end if
+        call inflate_geometry(surface_mesh,cm2dopt)
+    end if
+
+    !Construct mesh (base cut-cell)
+    if (cm2dopt%dispt == 1) then
+        write(*,'(A)') '--> constructing mesh'
+    end if
+    call cell_mesh2d_mesh(volume_mesh,surface_mesh,cm2dopt) !build base cutcell mesh 
+
+    !Populate inflation layer mesh 
+    if (cm2dopt%build_inflayer == 'yes') then 
+        if (cm2dopt%dispt == 1) then
+            write(*,'(A)') '--> meshing inflation layer'
+        end if
+        call mesh_inflation_layer(volume_mesh,surface_mesh,cm2dopt)
+    end if 
+
+    !Construct mesh cells if required 
+    if ((cm2dopt%meshtype == 'su2_cutcell') .OR. (cm2dopt%meshtype == 'su2_dual')) then 
+        call build_mesh_cells(volume_mesh)
+    end if 
+
+    !Build minD O mesh
+    if (cm2dopt%meshtype == 'minD_O') then 
+        call build_minD_Omesh(volume_mesh,surface_mesh,cm2dopt)
+    end if 
 
     !Exit if critical failure detected 
     if (cm2dopt%cm2dfailure == 1) then 
@@ -101,7 +142,7 @@ elseif (cm2dopt%mode == 'mesh') then !mesh generation mode
     !Export items 
     call export_status(cm2dopt)
     call export_volume_mesh(volume_mesh,cm2dopt)
-    if ((cm2dopt%meshfrmat == 'su2_cutcell') .OR. (cm2dopt%meshfrmat == 'su2_dual')) then 
+    if ((cm2dopt%meshtype == 'su2_cutcell') .OR. (cm2dopt%meshtype == 'su2_dual')) then 
         call export_volume_mesh_SU2(volume_mesh,cm2dopt)
     end if 
     if (cm2dopt%glink_con == 1) then 

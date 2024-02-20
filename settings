@@ -1,4 +1,4 @@
-MACH = 2.0
+MACH = 0.95
 AOA= 0.0
 
 RHOINF = 1.225
@@ -6,8 +6,8 @@ TINF = 287.0
 GAM = 1.403
 RUNIV = 287.058
 
-CFL = 1.2
-K1 = 1.25
+CFL = 1.5
+K1 = 1.0
 K2 = 0.1
 DSF = 1 0 0 0
 
@@ -18,7 +18,7 @@ MG_CYCLE = V
 MG_SIMPLIFY_ANGLE = 40
 
 MINRES = -8
-MAXITER = 20000
+MAXITER = 10000
 
 GRID_FILE = io/grid
 

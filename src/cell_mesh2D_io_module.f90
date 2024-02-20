@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 6.1
-!Updated 15-12-2023
+!Version 7.0
+!Updated 20-02-2024
 
 !Module
 module cellmesh2d_io_mod
@@ -117,11 +117,10 @@ type(cm2d_options) :: cm2dopt
 
 !Set general options 
 cm2dopt%dispt = 1
-cm2dopt%meshtype = 0
+cm2dopt%meshtype = 'cutcell'
 cm2dopt%meshinout = 'out'
 cm2dopt%surface_dir = 'in'
 cm2dopt%boundary_dir = 'in'
-cm2dopt%meshfrmat = 'cutcell'
 
 !Set quadtree refinement options 
 cm2dopt%Nrefine = 11
@@ -143,7 +142,9 @@ cm2dopt%mymax = 10.0d0
 
 !Set mesh cleaning options
 cm2dopt%EminLength = 1e-8
+cm2dopt%sEminLength = 0.005d0 
 cm2dopt%CminVol = 0.1d0 
+cm2dopt%srfinclean = 'no'
 
 !Set geometry intersection options
 cm2dopt%NintEmax = 50
@@ -151,9 +152,22 @@ cm2dopt%elenpad = 0.0d0
 cm2dopt%intcointol = 1e-8
 
 !Set mesh surface options 
-cm2dopt%surface_type = 1
+cm2dopt%surface_type = 0
 cm2dopt%surfRcurvM = 1.0d0 
+cm2dopt%vtx_sharp_dpval = 0.5d0 
 cm2dopt%NPsinterp = 20 
+
+!Set inflation layer options
+cm2dopt%build_inflayer = 'no'
+cm2dopt%inflayer_height = 0.075d0 
+cm2dopt%inflayer_nlayer = 0
+cm2dopt%inflayer_nintstep_max = 10000
+cm2dopt%inflayer_eveningstepsize = 0.2d0 
+cm2dopt%inflayer_dvstepsize = 200.0d0 
+cm2dopt%inflayer_h0 = 0.01d0 
+cm2dopt%inflayer_cvxep = 1.0d0 
+cm2dopt%inflayer_cvxdp = 0.1d0
+cm2dopt%inflayer_nbclinesearch = 100
 
 !Set mesh smoothing options 
 cm2dopt%Nsstype = 0
@@ -199,11 +213,10 @@ open(11,file=cm2dopt%optpath//'cell_mesh2d_options.dat')
 
 !Set general options 
 call set_int_opt(cm2dopt%dispt,11,'condisp')
-call set_int_opt(cm2dopt%meshtype,11,'meshtype')
+call set_str_opt(cm2dopt%meshtype,11,'meshtype')
 call set_str_opt(cm2dopt%meshinout,11,'meshinout')
 call set_str_opt(cm2dopt%surface_dir,11,'surfnormdir')
 call set_str_opt(cm2dopt%boundary_dir,11,'bndrynormdir')
-call set_str_opt(cm2dopt%meshfrmat,11,'meshformat')
 
 !Set quadtree refinement options 
 call set_int_opt(cm2dopt%Nrefine,11,'nqtrefine')
@@ -225,7 +238,9 @@ call set_real_opt(cm2dopt%mymax,11,'bound_ymax')
 
 !Set mesh cleaning options
 call set_real_opt(cm2dopt%EminLength,11,'eminlength')
+call set_real_opt(cm2dopt%sEminLength,11,'srfeminlength')
 call set_real_opt(cm2dopt%CminVol,11,'cminvol')
+call set_str_opt(cm2dopt%srfinclean,11,'srfinclean')
 
 !Set geometry intersection options
 call set_int_opt(cm2dopt%NintEmax,11,'enintmax')
@@ -236,6 +251,18 @@ call set_real_opt(cm2dopt%intcointol,11,'intcointol')
 call set_int_opt(cm2dopt%surface_type,11,'surftype')
 call set_real_opt(cm2dopt%surfRcurvM,11,'scurvmult')
 call set_int_opt(cm2dopt%NPsinterp,11,'scurvnpnt')
+
+!Inflation layer options 
+call set_str_opt(cm2dopt%build_inflayer,11,'build_inflayer')
+call set_real_opt(cm2dopt%inflayer_height,11,'inflayer_height')
+call set_int_opt(cm2dopt%inflayer_nlayer,11,'inflayer_nlayer')
+call set_real_opt(cm2dopt%inflayer_h0,11,'inflayer_h0')
+call set_int_opt(cm2dopt%inflayer_nintstep_max,11,'inflayer_nintstep_max')
+call set_real_opt(cm2dopt%inflayer_eveningstepsize,11,'inflayer_we')
+call set_real_opt(cm2dopt%inflayer_dvstepsize,11,'inflayer_wd')
+call set_real_opt(cm2dopt%inflayer_cvxep,11,'inflayer_cvxep')
+call set_real_opt(cm2dopt%inflayer_cvxdp,11,'inflayer_cvxdp')
+call set_int_opt(cm2dopt%inflayer_nbclinesearch,11,'inflayer_nbclinesearch')
 
 !Set mesh smoothing options 
 call set_int_opt(cm2dopt%Nsstype,11,'smoothingtype')
@@ -399,8 +426,8 @@ type(cm2d_options) :: cm2dopt
 type(vol_mesh_data) :: volume_mesh
 
 !Variables - Local
-integer(in) :: ii,bb,vv
-integer(in) :: NBCtype,maxbc
+integer(in) :: ii,bb,vv,ee
+integer(in) :: NBCtype,maxbc,v1,v2
 integer(in), dimension(:), allocatable :: bcactive,nebct
 
 !Display
@@ -427,6 +454,8 @@ do ii=1,volume_mesh%ncell
         write(11,'(I0)',advance='no') 5
     elseif (volume_mesh%cells(ii)%nvtx == 4) then !quadrilateral element
         write(11,'(I0)',advance='no') 9
+    else
+        write(*,'(A,I0,A,I0)') '    ** warning: non tri/quad cell detected with ',volume_mesh%cells(ii)%nvtx,' vertices at cell ',ii
     end if 
     do vv=1,volume_mesh%cells(ii)%nvtx
         write(11,'(A,I0)',advance='no') ' ',volume_mesh%cells(ii)%vertices(vv) - 1
@@ -436,16 +465,23 @@ end do
 
 !Identify all active types of boundary condition 
 NBCtype = 0 
-maxbc = abs(min(minval(volume_mesh%edge(:,3)),minval(volume_mesh%edge(:,4))))
+maxbc = 0
+do ii=1,volume_mesh%ncell
+    do ee=1,volume_mesh%cells(ii)%nedge
+        if (volume_mesh%cells(ii)%boundary_condition(ee) .LT. maxbc) then 
+            maxbc = volume_mesh%cells(ii)%boundary_condition(ee)
+        end if 
+    end do 
+end do 
+maxbc = abs(maxbc)
 allocate(bcactive(maxbc))
 bcactive(:) = 0 
-do ii=1,volume_mesh%nedge
-    if (volume_mesh%edge(ii,3) .LT. 0) then 
-        bcactive(abs(volume_mesh%edge(ii,3))) = 1
-    end if 
-    if (volume_mesh%edge(ii,4) .LT. 0) then 
-        bcactive(abs(volume_mesh%edge(ii,4))) = 1
-    end if 
+do ii=1,volume_mesh%ncell
+    do ee=1,volume_mesh%cells(ii)%nedge
+        if (volume_mesh%cells(ii)%boundary_condition(ee) .LT. 0) then 
+            bcactive(abs(volume_mesh%cells(ii)%boundary_condition(ee))) = 1
+        end if 
+    end do 
 end do 
 NBCtype = sum(bcactive)
 
@@ -453,13 +489,12 @@ NBCtype = sum(bcactive)
 allocate(nebct(maxbc))
 nebct(:) = 0 
 do bb=1,maxbc
-    do ii=1,volume_mesh%nedge
-        if (volume_mesh%edge(ii,3) == -bb) then 
-            nebct(bb) = nebct(bb) + 1
-        end if 
-        if (volume_mesh%edge(ii,4) == -bb) then 
-            nebct(bb) = nebct(bb) + 1
-        end if
+    do ii=1,volume_mesh%ncell
+        do ee=1,volume_mesh%cells(ii)%nedge
+            if (volume_mesh%cells(ii)%boundary_condition(ee) == -bb) then 
+                nebct(bb) = nebct(bb) + 1
+            end if 
+        end do 
     end do 
 end do 
 
@@ -475,20 +510,100 @@ do bb=1,maxbc
         write(11,'(A,I0)') 'MARKER_ELEMS= ',nebct(bb)
 
         !Write edges on this boundary condition 
-        do ii=1,volume_mesh%nedge
-            if (volume_mesh%edge(ii,3) == -bb) then 
-                write(11,'(I0,A,I0,A,I0)') 3,' ',volume_mesh%edge(ii,1) - 1,' ',volume_mesh%edge(ii,2) - 1
-            end if 
-            if (volume_mesh%edge(ii,4) == -bb) then 
-                write(11,'(I0,A,I0,A,I0)') 3,' ',volume_mesh%edge(ii,1) - 1,' ',volume_mesh%edge(ii,2) - 1
-            end if
+        do ii=1,volume_mesh%ncell
+            do ee=1,volume_mesh%cells(ii)%nedge
+                if (volume_mesh%cells(ii)%boundary_condition(ee) == -bb) then 
+
+                    !Vertices on this edge
+                    v1 = ee 
+                    v2 = modulo(ee,volume_mesh%cells(ii)%nedge) + 1
+                    v1 = volume_mesh%cells(ii)%vertices(v1)
+                    v2 = volume_mesh%cells(ii)%vertices(v2)
+
+                    !Write
+                    write(11,'(I0,A,I0,A,I0)') 3,' ',v1 - 1,' ',v2 - 1
+                end if 
+            end do 
         end do 
     end if 
 end do 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! !Identify all active types of boundary condition 
+! NBCtype = 0 
+! maxbc = abs(min(minval(volume_mesh%edge(:,3)),minval(volume_mesh%edge(:,4))))
+! allocate(bcactive(maxbc))
+! bcactive(:) = 0 
+! do ii=1,volume_mesh%nedge
+!     if (volume_mesh%edge(ii,3) .LT. 0) then 
+!         bcactive(abs(volume_mesh%edge(ii,3))) = 1
+!     end if 
+!     if (volume_mesh%edge(ii,4) .LT. 0) then 
+!         bcactive(abs(volume_mesh%edge(ii,4))) = 1
+!     end if 
+! end do 
+! NBCtype = sum(bcactive)
+
+! !Find the number of edges in each active boundary condition 
+! allocate(nebct(maxbc))
+! nebct(:) = 0 
+! do bb=1,maxbc
+!     do ii=1,volume_mesh%nedge
+!         if (volume_mesh%edge(ii,3) == -bb) then 
+!             nebct(bb) = nebct(bb) + 1
+!         end if 
+!         if (volume_mesh%edge(ii,4) == -bb) then 
+!             nebct(bb) = nebct(bb) + 1
+!         end if
+!     end do 
+! end do 
+
+! !Write boundary condition markers 
+! write(11,'(A,I0)') 'NMARK= ',NBCtype
+! do bb=1,maxbc
+!     if (bcactive(bb) == 1) then     
+
+!         !Write tag of this boundary condition 
+!         write(11,'(A,I0)') 'MARKER_TAG= ',-bb
+
+!         !Write number of edges for this boundary condition 
+!         write(11,'(A,I0)') 'MARKER_ELEMS= ',nebct(bb)
+
+!         !Write edges on this boundary condition 
+!         do ii=1,volume_mesh%nedge
+!             if (volume_mesh%edge(ii,3) == -bb) then 
+!                 write(11,'(I0,A,I0,A,I0)') 3,' ',volume_mesh%edge(ii,1) - 1,' ',volume_mesh%edge(ii,2) - 1
+!             end if 
+!             if (volume_mesh%edge(ii,4) == -bb) then 
+!                 write(11,'(I0,A,I0,A,I0)') 3,' ',volume_mesh%edge(ii,1) - 1,' ',volume_mesh%edge(ii,2) - 1
+!             end if
+!         end do 
+!     end if 
+! end do 
+
+
+
+
 !Close file
 close(11)
 
+!Display
+if (cm2dopt%dispt == 1) then
+    write(*,'(A)') '    {complete}'
+end if
 return 
 end subroutine export_volume_mesh_SU2
 

@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 5.2
-!Updated 18-01-2024
+!Version 5.3
+!Updated 20-02-2024
 
 !Module
 module cellmesh2d_postprocess_mod
@@ -142,10 +142,12 @@ end subroutine nearsurf_lap_smooth
 
 
 !Mesh short edge cleaning subroutine ===========================
-subroutine clean_mesh_shortE(volume_mesh,cm2dopt)
+subroutine clean_mesh_shortE(volume_mesh,cm2dopt,eminlength,filter_bc)
 implicit none 
 
 !Variables - Import
+integer(in), optional :: filter_bc
+real(dp) :: eminlength
 type(cm2d_options) :: cm2dopt
 type(vol_mesh_data) :: volume_mesh
 
@@ -182,7 +184,7 @@ do ii=1,volume_mesh%nedge
     Lref = max(lr,ll)
 
     !Find reference edge length for this cell 
-    edgelen_ref = cm2dopt%EminLength*(2.0d0*cm2dopt%far_field_bound/(2.0d0**(Lref - 1)))
+    edgelen_ref = eminlength*(2.0d0*cm2dopt%far_field_bound/(2.0d0**(Lref - 1)))
 
     !Test if edge is too short
     edgelen = norm2(volume_mesh%vertices(v2,:) - volume_mesh%vertices(v1,:))
@@ -191,6 +193,18 @@ do ii=1,volume_mesh%nedge
         edge_status(ii) = 1
     end if
 end do 
+
+!Filter for boundary conditions if required 
+if (present(filter_bc)) then 
+    do ii=1,volume_mesh%nedge
+        if (edge_status(ii) == 1) then 
+            if ((volume_mesh%edge(ii,3) .NE. filter_bc) .AND. (volume_mesh%edge(ii,4) .NE. filter_bc)) then 
+                edge_status(ii) = 0 
+                Neshort = Neshort - 1
+            end if 
+        end if 
+    end do 
+end if 
 
 !Clean if any short edges are identified 
 if (Neshort .NE. 0) then 
@@ -323,8 +337,14 @@ if (Neshort .NE. 0) then
     volume_mesh%edge(:,:) = edge_new(1:Nenew,:) 
 
     !Display
-    if (cm2dopt%dispt == 1) then
-        write(*,'(A,I0,A)') '    {identified and collapsed ',Neshort,' short edges}'
+    if (present(filter_bc)) then 
+        if (cm2dopt%dispt == 1) then
+            write(*,'(A,I0,A,I0,A)') '    {identified and collapsed ',Neshort,' short edges on boundary condition ',filter_bc,'}'
+        end if 
+    else  
+        if (cm2dopt%dispt == 1) then
+            write(*,'(A,I0,A)') '    {identified and collapsed ',Neshort,' short edges}'
+        end if 
     end if 
 end if
 return 
@@ -979,9 +999,20 @@ volume_mesh%nvtx_surf = Nvsurf
 allocate(volume_mesh%surf_vtx(Nvsurf))
 allocate(volume_mesh%surf_vtx_seg(Nvsurf))
 allocate(volume_mesh%surf_vtx_segfrac(Nvsurf))
+allocate(volume_mesh%surf_linkindex(volume_mesh%nvtx))
+
+!Assign link index
 Nvsurf = 0 
+volume_mesh%surf_linkindex(:) = 0 
+do vv=1,volume_mesh%nvtx
+    if (volume_mesh%vtx_surfseg(vv) .NE. 0) then 
+        Nvsurf = Nvsurf + 1
+        volume_mesh%surf_linkindex(vv) = Nvsurf
+    end if 
+end do 
 
 !Build arrays
+Nvsurf = 0 
 do vv=1,volume_mesh%nvtx
     if (volume_mesh%vtx_surfseg(vv) .NE. 0) then 
 
@@ -2868,12 +2899,20 @@ end do
 deallocate(volume_mesh%edge)
 deallocate(volume_mesh%vertices)
 deallocate(volume_mesh%cell_level)
+deallocate(volume_mesh%edge_midpoint)
 allocate(volume_mesh%edge(Nenew,4))
 volume_mesh%edge(:,:) = edge_new(1:Nenew,:)
 allocate(volume_mesh%vertices(Nvnew,2))
 volume_mesh%vertices(:,:) = vertices_new(:,:)
 allocate(volume_mesh%cell_level(Ncnew))
 volume_mesh%cell_level(:) = 0
+allocate(volume_mesh%edge_midpoint(Nenew,2))
+volume_mesh%edge_midpoint(:,:) = 0.0d0 
+do ee=1,volume_mesh%nedge
+    v1 = volume_mesh%edge(ee,1)
+    v2 = volume_mesh%edge(ee,2)
+    volume_mesh%edge_midpoint(ee,:) = 0.5d0*(volume_mesh%vertices(v1,:) + volume_mesh%vertices(v2,:))
+end do 
 volume_mesh%nedge = Nenew
 volume_mesh%nvtx = Nvnew
 volume_mesh%ncell = Ncnew
@@ -3177,9 +3216,9 @@ type(tree_data) :: surface_adtree
 
 !Variables - Local 
 integer(in) :: ee,vv,aa,nn,kk,ff
-integer(in) :: Nsurf_edge,etgt,maxvlnc,v1,v2,nselected
+integer(in) :: Nsurf_edge,etgt,maxvlnc,v1,v2,nselected,face_c
 integer(in) :: vtx_surface(volume_mesh%nvtx)
-integer(in) :: valence(volume_mesh%nvtx),node_select(surface_adtree%nnode)
+integer(in) :: valence(volume_mesh%nvtx),node_select(surface_adtree%nnode),surface_face_link(volume_mesh%nvtx)
 integer(in), dimension(:), allocatable :: vmsurf_edges
 integer(in), dimension(:,:), allocatable :: v2v
 real(dp) :: dx,dy,nnorm,xmin,ymin,xmax,ymax,rpad,rsup,normN,normC,adj_weight,adj_weightT,dref
@@ -3262,6 +3301,7 @@ zzmin = 0.0d0
 zzmax = 0.0d0 
 nselected = 0 
 node_select(:) = 0 
+surface_face_link(:) = 0 
 vtx_deformation(:,:) = 0.0d0 
 do vv=1,volume_mesh%nvtx
     if (vtx_surface(vv) == 1) then 
@@ -3288,6 +3328,7 @@ do vv=1,volume_mesh%nvtx
 
         !If any found then search for closest intersection 
         if (nselected .NE. 0) then 
+            face_c = 0
             vic(:) = ieee_value(1.0d0,IEEE_POSITIVE_INF)
             do nn=1,nselected
                 do kk=1,surface_adtree%tree(node_select(nn))%nentry
@@ -3305,16 +3346,23 @@ do vv=1,volume_mesh%nvtx
                         normC = sqrt((vic(1) - volume_mesh%vertices(vv,1))**2 + (vic(2) - volume_mesh%vertices(vv,2))**2)
                         if (normN .LT. normC) then 
                             vic = vi
+                            face_c = surface_adtree%tree(node_select(nn))%entry(kk)
                         end if 
                     end if 
                 end do 
             end do 
             if (.NOT.isnan(vic(1))) then 
                 vtx_deformation(vv,:) = vic(:) - volume_mesh%vertices(vv,:)
+                surface_face_link(vv) = face_c
             end if 
         end if 
     end if 
 end do 
+
+!Reassign surface links volume_mesh%vtx_surfseg(vv)
+deallocate(volume_mesh%vtx_surfseg)
+allocate(volume_mesh%vtx_surfseg(volume_mesh%nvtx))
+volume_mesh%vtx_surfseg(:) = surface_face_link(:)
 
 !Flood deformations through mesh 
 do ff=1,20
@@ -3365,7 +3413,7 @@ type(vol_mesh_data) :: volume_mesh
 
 !Variables - Local 
 integer(in) :: ee,cc
-integer(in) :: c3,c4,maxcedge,Cins,Eins,etgt,v1,v2
+integer(in) :: c3,c4,maxcedge,Cins,Eins,etgt,v1,v2,ec
 integer(in) :: nedge_cell(volume_mesh%ncell)
 integer(in) :: V2E(volume_mesh%nvtx,2)
 integer(in), dimension(:), allocatable :: cedge_loop,cvtx_loop
@@ -3424,6 +3472,20 @@ do cc=1,volume_mesh%ncell
     allocate(volume_mesh%cells(cc)%edges(nedge_cell(cc)))
     volume_mesh%cells(cc)%vertices(:) = cvtx_loop(1:nedge_cell(cc))
     volume_mesh%cells(cc)%edges(:) = cedge_loop(1:nedge_cell(cc))
+
+    !Tag boundary conditions on each of the cells edges
+    allocate(volume_mesh%cells(cc)%boundary_condition(nedge_cell(cc)))
+    volume_mesh%cells(cc)%boundary_condition(:) = 0 
+    do ee=1,nedge_cell(cc)
+        ec = volume_mesh%cells(cc)%edges(ee)
+        c3 = volume_mesh%edge(ec,3)
+        c4 = volume_mesh%edge(ec,4)
+        if (c3 .LT. 0) then 
+            volume_mesh%cells(cc)%boundary_condition(ee) = c3 
+        elseif (c4 .LT. 0) then 
+            volume_mesh%cells(cc)%boundary_condition(ee) = c4 
+        end if 
+    end do 
 
     !Reset V2E
     do ee=1,nedge_cell(cc)
@@ -3584,6 +3646,19 @@ if (Acell .LT. 0.0d0) then
         cvtx_loop(ee) = vtgt
     end do  
 end if 
+
+
+! print *, '--------------------'
+! do ee=1,nedge_cell(ctgt)
+!     v1 = ee 
+!     v2 = modulo(ee,nedge_cell(ctgt)) + 1
+!     v1 = cvtx_loop(v1)
+!     v2 = cvtx_loop(v2)
+!     en = cedge_loop(ee)
+
+!     print *, v1,v2,' || ',volume_mesh%edge(en,1),volume_mesh%edge(en,2)
+! end do 
+
 return 
 end subroutine build_cell_edges_vertices
 

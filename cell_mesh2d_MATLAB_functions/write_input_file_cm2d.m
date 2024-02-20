@@ -2,13 +2,13 @@
 %Max Wood - mw16116@bristol.ac.uk
 %Univeristy of Bristol - Department of Aerospace Engineering
 
-%Version 6.0
-%Updated 12-02-2024
+%Version 6.3
+%Updated 20-02-2024
 
 %Function -----------------------------------------------------------------
 function [] = write_input_file_cm2d(cm2dopt)
 fid = fopen('io\cell_mesh2d_options.dat','w+');
-    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.8.0)');
+    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.8.1)');
     fprintf(fid,'%s \n',' ');
     
     fprintf(fid,'%s \n','#=== General Options =================================');
@@ -17,8 +17,8 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n',' ');
 
     fprintf(fid,'%s \n','#=== Mesh Format Options =============================');
-    fprintf(fid,'%s \n','#Type of mesh (0 = cutcell | 1 = minD block mesh)');
-    fprintf(fid,'%s %d \n','meshtype =',cm2dopt.meshtype);
+    fprintf(fid,'%s \n','#Type of mesh (cutcell / su2_cutcell / su2_dual / minD_O)');
+    fprintf(fid,'%s %s \n','meshtype =',cm2dopt.meshtype);
     fprintf(fid,'%s \n',' ');
     fprintf(fid,'%s \n','#Mesh inside or outside of geometry');
     fprintf(fid,'%s %s \n','meshinout =',cm2dopt.meshinout);
@@ -28,9 +28,6 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n',' '); 
     fprintf(fid,'%s \n','#Boundary normal direction switch in to / out of the mesh domain');
     fprintf(fid,'%s %s \n','bndrynormdir =',cm2dopt.boundary_dir);
-    fprintf(fid,'%s \n',' '); 
-    fprintf(fid,'%s \n','#Mesh output format (cutcell / su2_cutcell / su2_dual)');
-    fprintf(fid,'%s %s \n','meshformat =',cm2dopt.meshfrmat);
     fprintf(fid,'%s \n',' '); 
 
     fprintf(fid,'%s \n','#=== Quadtree Options ================================');
@@ -75,8 +72,14 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n','#Minimum edge length as a fraction of an undeformed cell edge length at each refienemnt level');
     fprintf(fid,'%s %E \n','eminlength =',cm2dopt.eminlen);
     fprintf(fid,'%s \n',' ');
+    fprintf(fid,'%s \n','#Minimum surface edge length as a fraction of an undeformed cell edge length at each refienemnt level');
+    fprintf(fid,'%s %E \n','srfeminlength =',cm2dopt.srfeminlen);
+    fprintf(fid,'%s \n',' ');
     fprintf(fid,'%s \n','#Volume fraction of an undeformed cell at each refinement level below which a cell is classed as a sliver cell');
-    fprintf(fid,'%s %E \n','cminvol =',cm2dopt.cminvol);
+    fprintf(fid,'%s %s \n','srfinclean =',cm2dopt.srfinclean);
+    fprintf(fid,'%s \n',' '); 
+    fprintf(fid,'%s \n','#Allow cleaning of the input surface geometry ');
+    fprintf(fid,'%s %s \n','cminvol =',cm2dopt.cminvol);
     fprintf(fid,'%s \n',' '); 
 
     fprintf(fid,'%s \n','#=== Mesh Geometry Intersection Options ==============');
@@ -99,6 +102,32 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n',' ');  
     fprintf(fid,'%s \n','#Number of vertices used to estimate local surface curvaturer');
     fprintf(fid,'%s %d \n','scurvnpnt =',cm2dopt.surfRcurvNpts);
+    fprintf(fid,'%s \n',' ');  
+
+    fprintf(fid,'%s \n','#=== Inflation Layer Options =========================');
+    fprintf(fid,'%s \n','#Toggle construction of an inflation layer (yes | no)');
+    fprintf(fid,'%s %s \n','build_inflayer =',cm2dopt.build_inflayer);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer approximate height');
+    fprintf(fid,'%s %f \n','inflayer_height =',cm2dopt.inflayer_height);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Number of layers within the inflation layer (determine automatically if zero)');
+    fprintf(fid,'%s %d \n','inflayer_nlayer =',cm2dopt.inflayer_nlayer);
+    fprintf(fid,'%s \n',' ');  
+    % fprintf(fid,'%s \n','#Inflation layer first layer approximate height');
+    % fprintf(fid,'%s %f \n','inflayer_h0 =',cm2dopt.inflayer_h0);
+    % fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer evening weight (0->1)');
+    fprintf(fid,'%s %f \n','inflayer_we =',cm2dopt.inflayer_we);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer differencing weight (0->1)');
+    fprintf(fid,'%s %f \n','inflayer_wd =',cm2dopt.inflayer_wd);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer convex evening penalty (0->1)');
+    fprintf(fid,'%s %f \n','inflayer_cvxep =',cm2dopt.inflayer_cvxep);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer convex differencing penalty (0->1)');
+    fprintf(fid,'%s %f \n','inflayer_cvxdp =',cm2dopt.inflayer_cvxdp);
     fprintf(fid,'%s \n',' ');  
 
     fprintf(fid,'%s \n','#=== Mesh Smoothing Options ==========================');

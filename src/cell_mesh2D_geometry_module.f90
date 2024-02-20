@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 8.3
-!Updated 12-02-2024
+!Version 8.4
+!Updated 20-02-2024
 
 !Geometry subroutines module
 module cellmesh2d_geometry_mod
@@ -24,6 +24,38 @@ real(dp) :: reflen,min_precision_val,cval
 cval = max(reflen,min_precision_val)
 return 
 end function set_cmp_prc
+
+
+
+
+!Cell volumes subroutine ===========================
+subroutine get_cell_volumes(Cvol,volume_mesh)
+implicit none 
+
+!Variables - Import
+real(dp), dimension(:), allocatable :: Cvol
+type(vol_mesh_data) :: volume_mesh
+
+!Variables - Local 
+integer(in) :: ii
+real(dp) :: AEdge
+
+if (allocated(Cvol)) then 
+    deallocate(Cvol)
+end if
+allocate(Cvol(volume_mesh%ncell))
+Cvol(:) = 0.0d0
+do ii=1,volume_mesh%nedge
+    AEdge = Asegment(volume_mesh%vertices(volume_mesh%edge(ii,1),:),volume_mesh%vertices(volume_mesh%edge(ii,2),:))
+    if (volume_mesh%edge(ii,4) .GT. 0) then
+        Cvol(volume_mesh%edge(ii,4)) = Cvol(volume_mesh%edge(ii,4)) - AEdge
+    end if 
+    if (volume_mesh%edge(ii,3) .GT. 0) then
+        Cvol(volume_mesh%edge(ii,3)) = Cvol(volume_mesh%edge(ii,3)) + AEdge
+    end if
+end do
+return 
+end subroutine get_cell_volumes
 
 
 
@@ -291,6 +323,30 @@ real(dp) :: Aseg
 Aseg = 0.5d0*(v1(1)*v2(2) - v2(1)*v1(2))
 return 
 end function Asegment
+
+
+
+
+!Segment normal function ===========================
+function Nsegment(v1,v2) result(Nseg) 
+implicit none 
+
+!Variables - Import
+real(dp) :: v1(2),v2(2)
+
+!Result
+real(dp) :: Nseg(2)
+
+!Variables - Local 
+real(dp) :: dx,dy 
+
+!Evaluate
+dx = v2(1) - v1(1)
+dy = v2(2) - v1(2)
+Nseg(1) = -dy 
+Nseg(2) = dx
+return 
+end function Nsegment
 
 
 

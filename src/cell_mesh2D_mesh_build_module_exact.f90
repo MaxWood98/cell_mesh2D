@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 3.3
-!Updated 19-07-2023
+!Version 4.0
+!Updated 20-02-2024
 
 !Module 
 module cellmesh2d_mesh_build_exact_mod
@@ -1164,7 +1164,7 @@ do ee=1,volume_mesh_full%nedge
             !     edge_clip(ee)%int_seg_type(1) = 3
             else 
                 cm2dopt%cm2dfailure = 1
-                print *, '** edge intersection enter/exit disagreement with vtxinternal at edge: ',ee
+                write(*,'(A,I0)') '    ** edge intersection enter/exit disagreement with vtxinternal at edge: ',ee
                 print *, edge_clip(ee)%nint
                 print *, edge_clip(ee)%int_inout(1)
                 print *, edge_clip(ee)%type

@@ -19,22 +19,19 @@ clc
 cm2dopt.condisp = 1;               %Toggle console display (1 = yes || 0 = no)
 
 %Mesh format options 
-cm2dopt.meshtype = 0;              %Type of mesh (0 = cutcell | 1 = minD block mesh)
+cm2dopt.meshtype = 'cutcell';      %Type of mesh (cutcell / su2_cutcell / su2_dual / minD_O)
 cm2dopt.meshinout = 'out';         %Mesh inside or outside of geometry (default out)
 cm2dopt.surface_dir = 'in';        %Surface normal direction switch in to / out of the mesh domain (default in)
 cm2dopt.boundary_dir = 'in';       %Boundary normal direction switch in to / out of the mesh domain (default in)
-cm2dopt.meshfrmat = 'cutcell';     %Mesh output format (cutcell / su2_cutcell / su2_dual)
-% cm2dopt.meshfrmat = 'su2_dual';
-% cm2dopt.meshfrmat = 'su2_cutcell';
 
 %Cut-Cell mesh options ====================================================
 %Quadtree options
 cm2dopt.nrefine = 11;              %Maximum refinement level 
 cm2dopt.nrefineB = 0;              %Maximum additional refinement levels in high curvature regions
 cm2dopt.ncell_max = 200000;        %Maximum number of cells
-cm2dopt.nrflood_i = 8;             %Refinement adjacency flooding iterations at the first refinement
-cm2dopt.nrflood_f = 10;            %Refinement adjacency flooding iterations at the final refinement
-cm2dopt.nrflood_b = 1;             %Refinement adjacency flooding iterations on boosted refinement
+cm2dopt.nrflood_i = 12;            %Refinement adjacency flooding iterations at the first refinement
+cm2dopt.nrflood_f = 8;             %Refinement adjacency flooding iterations at the final refinement
+cm2dopt.nrflood_b = 5;             %Refinement adjacency flooding iterations on boosted refinement
 cm2dopt.fbound = 15;               %Far field distance from object centre  
 cm2dopt.coffset = [0.0 0.0];       %Object/mesh centre offset (x / y)
 
@@ -47,7 +44,9 @@ cm2dopt.ymax = 11.8;               %ymin
 
 %Mesh cleaning options
 cm2dopt.eminlen = 1e-8;            %Minimum edge length as a fraction of an undeformed cell edge length at each refienemnt level 
+cm2dopt.srfeminlen = 0.3;          %Minimum surface edge length as a fraction of an undeformed cell edge length at each refienemnt level 
 cm2dopt.cminvol = 0.1;             %Volume fraction of an undeformed cell at each refinement level below which a cell is classed as a sliver cell
+cm2dopt.srfinclean = 'no';         %Allow cleaning of the input surface geometry 
 
 %Mesh geometry intersection options
 cm2dopt.enintmax = 50;             %Maximum number of mesh-geometry intersections on each mesh edge
@@ -59,10 +58,19 @@ cm2dopt.surftype = 0;              %Geometry surface type (0 = 'simplified' | 1 
 cm2dopt.surfRcurvM = 1.0;          %Surface curvature multiplier
 cm2dopt.surfRcurvNpts = 10;        %Number of vertices used to estimate local surface curvature
 
+%Inflation layer options 
+cm2dopt.build_inflayer = 'yes';    %Toggle construction of an inflation layer (yes | no)
+cm2dopt.inflayer_height = 0.075;   %Inflation layer approximate height
+cm2dopt.inflayer_nlayer = 0;       %Number of layers within the inflation layer (determine automatically if zero)
+cm2dopt.inflayer_we = 0.2;         %Inflation layer evening weight (0->1)
+cm2dopt.inflayer_wd = 200;         %Inflation layer differencing weight (0->1)
+cm2dopt.inflayer_cvxep = 1.0;      %Inflation layer convex evening penalty (0->1)
+cm2dopt.inflayer_cvxdp = 0.05;      %Inflation layer convex differencing penalty (0->1)
+
 %Mesh smoothing options
 cm2dopt.nsstype = 0;               %Near surface smoothing type (0 = 'none' | 1 = 'Laplacian')
-cm2dopt.nsvtxflood = 2;            %Vertex selection flooding iterations from surfaces
-cm2dopt.nlpsmooth = 3;             %Smoothing iterations 
+cm2dopt.nsvtxflood = 5;            %Vertex selection flooding iterations from surfaces
+cm2dopt.nlpsmooth = 10;            %Smoothing iterations 
 
 %ADtree options
 cm2dopt.adtree_spad = 0.0;         %Maximum padding size of adtree search bounding boxes as multiple of cell edge length
@@ -88,7 +96,7 @@ cm2dopt.rem_nczones = 0;           %Remove any region of the mesh connected to a
 cm2dopt.rem_iszones = 0;           %Remove any isolated region of the mesh connected only to a wall boundary condition 
 
 %Boundary condition zone bounds [xmin xmax ymin ymax]
-BC_zones_loc = [0.0 1.0 0.5 3.5;
+BC_zones_loc = [-1.0 1.0 0.5 3.5;
                 5.5 8.5 11.5 12.5];
 
 %Boundary condition zone conditions
@@ -99,7 +107,7 @@ BC_zones_loc = [0.0 1.0 0.5 3.5;
 % -5 = stagnation state inflow
 % -6 = freestream inflow
 % -7 = back pressure outflow 
-BC_zones_type = [-2 ; -6];
+BC_zones_type = [-5 ; -6];
 
 
 
@@ -113,7 +121,7 @@ end
 
 %Call meshing function 
 system('cell_mesh2d mesh');
-system('cell_mesh2d project');
+% system('cell_mesh2d project');
 
 %% Load mesh
 
@@ -130,14 +138,64 @@ filepath = 'io/grid';
 cla reset 
 hold on
 
+% vtxd = load('io/vtxd');
+
 %Plot mesh
 patch('vertices',vtx,'faces',edge,'EdgeAlpha',1.0,'Marker','none');
+% patch('vertices',[vtx vtxd],'faces',edge,'EdgeAlpha',1.0,'Marker','none');
+
+
+
+% vtgt = 366+1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'r*');
+% 
+% vtgt = 368+1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'b*');
+% 
+% vtgt = 788+1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'r*');
+% 
+% vtgt = 797+1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'b*');
+% 
+% vtgt = 487+1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'r*');
+% 
+% vtgt = 367+1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'b*');
+
+
+% vtgt = 5115;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'b*');
+% 
+% vtgt = 5116;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'g*');
+% 
+% vtgt = 1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'r*');
+
+
+% vtgt = 5115;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'b*');
+% 
+% vtgt = 1;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'g*');
+% 
+% vtgt = 2;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'r*');
+% 
+% vtgt = 5117;
+% plot(vtx(vtgt,1),vtx(vtgt,2),'k*');
+
 
 %Read input surface file 
 [~,~,vertices,connectivity] = import_cell_mesh2d_surface('io/cell_mesh2d_surface.dat');
 
 %Plot object surface 
 patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[0.1 0.1 1],'MarkerEdgeColor','b');
+
+% vtgt = 322;
+% plot(vertices(vtgt,1),vertices(vtgt,2),'g*');
 
 %Plot boundary conditions 
 for ii=1:Nedge
@@ -152,16 +210,16 @@ for ii=1:Nedge
     end
 end
 
-%Plot surface and volume gradients 
-grad_surf = load('io/gradient_surf.dat');
-quiver(vertices(:,1),vertices(:,2),grad_surf(:,1),grad_surf(:,2),0,'r','maxheadsize',0.01)
-grad_vol = load('io/gradient.dat');
-quiver(vtx(:,1),vtx(:,2),grad_vol(:,1),grad_vol(:,2),0,'b','maxheadsize',0.01)
+% %Plot surface and volume gradients 
+% grad_surf = load('io/gradient_surf.dat');
+% quiver(vertices(:,1),vertices(:,2),grad_surf(:,1),grad_surf(:,2),0,'r','maxheadsize',0.01)
+% grad_vol = load('io/gradient.dat');
+% quiver(vtx(:,1),vtx(:,2),grad_vol(:,1),grad_vol(:,2),0,'b','maxheadsize',0.01)
 
 % %Plot cell
 % % ctgt = 4475;
 % % ctgt = 4654;
-% ctgt = 4653;
+% ctgt = 14770;
 % for ii=1:Nedge
 %     if cell_lr(ii,1) == ctgt || cell_lr(ii,2) == ctgt
 %         % edge(ii,:)
@@ -171,6 +229,76 @@ quiver(vtx(:,1),vtx(:,2),grad_vol(:,1),grad_vol(:,2),0,'b','maxheadsize',0.01)
 % end 
 
 
+% vtxtest = load('io/vtxtest');
+% % plot(vtxtest(:,1),vtxtest(:,2),'r.')
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0.1 0.1],'MarkerEdgeColor','r');
+
+
+% vtxtest = load('io/vtxtest1');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+
+% growdir = load('io/growdir1');
+% quiver(vtxtest(:,1),vtxtest(:,2),growdir(:,1),growdir(:,2),0.05,'b','maxheadsize',0.01)
+% 
+% 
+% vtxtest = load('io/vtxtest2');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+% 
+% vtxtest = load('io/vtxtest3');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+% 
+% vtxtest = load('io/vtxtest4');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+% 
+% vtxtest = load('io/vtxtest6');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+% 
+% vtxtest = load('io/vtxtest8');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+
+
+% 
+% vtxtest = load('io/vtxtest');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[0 0 0],'MarkerEdgeColor','r');
+
+
+
+% vtxtest = load('io/vtxtest120');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[0 1 0]);
+
+
+% vtxtest1 = load('io/vtx_level');
+% patch('vertices',vtxtest1,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+
+
+
+% vtxtest1 = load('io/vtxtestL3');
+% patch('vertices',vtxtest1,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+
+% vtxtest2 = load('io/vtxtestL2');
+% patch('vertices',vtxtest2,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+
+% vtxtest3 = load('io/vtxtestL3');
+% patch('vertices',vtxtest3,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+% 
+% vtxtest4 = load('io/vtxtestL4');
+% patch('vertices',vtxtest4,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+
+
+
+% for vtgt = 80:110
+%     plot([vertices(vtgt,1) vtxtest1(vtgt,1) vtxtest2(vtgt,1) vtxtest3(vtgt,1) vtxtest4(vtgt,1)],[vertices(vtgt,2) vtxtest1(vtgt,2) vtxtest2(vtgt,2) vtxtest3(vtgt,2) vtxtest4(vtgt,2)],'r');
+% end
+
+% vtxfull = load('io/vtxfull');
+% plot(vtxfull(:,1),vtxfull(:,2),'r*');
+
+% vtxsurf = load('io/vtxsurf');
+% plot(vtxsurf(:,1),vtxsurf(:,2),'bo');
+
+% plot(vtxfull(2484,1),vtxfull(2484,2),'b*');
+% plot(vtxfull(2612,1),vtxfull(2612,2),'g*');
+
 %Format
 axis equal
 axis tight
@@ -179,3 +307,70 @@ ylabel('y')
 hold off
 
 axis([-0.1699    1.1425   -0.6533    0.6591]);
+
+% axis([0.9823    1.0247    0.0183    0.0608]);
+
+% axis([0.9785    1.0298    0.0332    0.0846]);
+
+
+% axis([-0.0842    0.0486   -0.0688    0.0640]);
+
+% axis([0.9507    1.0971   -0.0331    0.1136]);
+
+% axis([0.9660    1.0660   -0.0111    0.0891]);
+
+% axis([0.1665    0.2349    0.1439    0.2123]);
+
+% axis([-0.0543    0.0789   -0.0619    0.0714]);
+
+%% Write geometry as loop 
+
+% %Read geometry file 
+% [~,~,vertices,connectivity] = import_cell_mesh2d_surface('io/cell_mesh2d_surface.dat');
+% Nfcs = length(connectivity(:,1));
+% Nvtx = length(vertices(:,1));
+% 
+% %Find base vertex
+% [mval,vbase] = min(vertices(:,1));
+% 
+% %Build v2f 
+% V2F = zeros(Nvtx,2,'int32');
+% for ff=1:Nfcs
+%     V2F(connectivity(ff,1),2) = ff;
+%     V2F(connectivity(ff,2),1) = ff;
+% end
+% 
+% %Accumulate vertices 
+% vins = 1;
+% vertices_list = zeros(Nvtx,2);
+% vertices_list(1,:) = vertices(vbase,:);
+% for ii=1:Nvtx-1
+%     fnext = V2F(vbase,1);
+%     if connectivity(fnext,1) == vbase
+%         vnext = connectivity(fnext,2);
+%     else
+%         vnext = connectivity(fnext,1);
+%     end
+%     vins = vins + 1;
+%     vertices_list(vins,:) = vertices(vnext,:);
+%     vbase = vnext;
+% end
+% 
+% %Flip 
+% vertices_list(:,1) = 1 - vertices_list(:,1);
+% 
+% % %Check
+% % cla reset
+% % hold on
+% % plot(vertices_list(:,1),vertices_list(:,2),'r')
+% % vtgt = 10;
+% % plot(vertices_list(vtgt,1),vertices_list(vtgt,2),'b*')
+% % hold off
+% 
+% %Export
+% fid = fopen('io\surface.dat','w+');
+% fprintf(fid,'%d \n',Nvtx);
+% for ii=1:Nvtx
+%     fprintf(fid,'%f %f \n',vertices_list(ii,:));
+% end
+% fclose(fid);
