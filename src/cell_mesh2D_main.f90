@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 4.0
-!Updated 18-01-2024
+!Version 4.1
+!Updated 20-02-2024
 
 !Main
 program cell_mesh2d
@@ -34,7 +34,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.8.1 || 16/02/2024         |'
+    write(*,'(A)')'|        Version 0.9.0 || 20/02/2024         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'
