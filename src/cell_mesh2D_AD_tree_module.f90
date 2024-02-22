@@ -23,7 +23,7 @@ end type ADtree_data
 !Tree container 
 type tree_data 
     integer(in) :: nnode,ndim,max_depth
-    real(dp), dimension(:,:), allocatable :: tgt_ab
+    real(dp), dimension(:,:), allocatable :: tgt_ab,tvtx
     type(ADtree_data), dimension(:), allocatable :: tree
 end type tree_data 
 
@@ -1311,46 +1311,72 @@ end function line_line_intersection_loc_inl1ad
 
 
 !Minimum distance from a point to a line segment function ===========================
-function mindist_point2linead(vp,v1,v2) result(vid)
+function mindist_point2linead(vp,ve1,ve2) result(vid)
 implicit none 
 
 !Variables - Import
-real(dp) :: vid(3) !xi | yi | dist 
-real(dp) :: vp(2),v1(2),v2(2)
+real(dp) :: vp(2),ve1(2),ve2(2),vid(3)
 
 !Variables - Local 
-real(dp) :: dx,dy,nx,ny
-real(dp) :: vn1(2),vn2(2)
+real(dp) :: t,f
+real(dp) :: edir(2)
 
-!Find line segment direction 
-dx = v2(1) - v1(1)
-dy = v2(2) - v1(2)
-
-!Check for zero length segment 
-if (dx*dx + dy*dy == 0.0d0) then 
-
-    !Return intersection point is vi = v1 = v2
-    vid(1:2) = v1(:)
-else
-
-    !Segment normal 
-    nx = -dy
-    ny = dx
-
-    !Build normal direction vertices 
-    vn1(1) = vp(1) + nx 
-    vn1(2) = vp(2) + ny 
-    vn2(1) = vp(1) - nx 
-    vn2(2) = vp(2) - ny
-
-    !Find intersection on base line segment 
-    vid(1:2) = line_line_intersection_loc_inl1ad(v1,v2,vn1,vn2) 
-end if
-
-!Find distance from this intersect to vp 
-vid(3) = sqrt((vp(1) - vid(1))**2 + (vp(2) - vid(2))**2)
+!Evaluate closest point 
+edir(:) = ve2(:) - ve1(:)
+edir(:) = edir(:)/norm2(edir(:))
+t = dot_product(vp - ve1,edir)
+vid(1:2) = ve1(:) + t*edir(:)
+f = dot_product(vid(1:2) - ve1(:),edir(:))/norm2(ve2(:) - ve1(:))
+! f = norm2(vid(1:2) - ve1(:))/norm2(ve2(:) - ve1(:))
+if (f .GT. 1.0d0) then 
+    vid(1:2) = ve2(:)
+elseif (f .LT. 0.0d0) then 
+    vid(1:2) = ve1(:)
+end if 
+vid(3) = norm2(vid(1:2) - vp(:))
 return 
 end function mindist_point2linead
+
+! function mindist_point2linead(vp,v1,v2) result(vid)
+! implicit none 
+
+! !Variables - Import
+! real(dp) :: vid(3) !xi | yi | dist 
+! real(dp) :: vp(2),v1(2),v2(2)
+
+! !Variables - Local 
+! real(dp) :: dx,dy,nx,ny
+! real(dp) :: vn1(2),vn2(2)
+
+! !Find line segment direction 
+! dx = v2(1) - v1(1)
+! dy = v2(2) - v1(2)
+
+! !Check for zero length segment 
+! if (dx*dx + dy*dy == 0.0d0) then 
+
+!     !Return intersection point is vi = v1 = v2
+!     vid(1:2) = v1(:)
+! else
+
+!     !Segment normal 
+!     nx = -dy
+!     ny = dx
+
+!     !Build normal direction vertices 
+!     vn1(1) = vp(1) + nx 
+!     vn1(2) = vp(2) + ny 
+!     vn2(1) = vp(1) - nx 
+!     vn2(2) = vp(2) - ny
+
+!     !Find intersection on base line segment 
+!     vid(1:2) = line_line_intersection_loc_inl1ad(v1,v2,vn1,vn2) 
+! end if
+
+! !Find distance from this intersect to vp 
+! vid(3) = sqrt((vp(1) - vid(1))**2 + (vp(2) - vid(2))**2)
+! return 
+! end function mindist_point2linead
 
 
 

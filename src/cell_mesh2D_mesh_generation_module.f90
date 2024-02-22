@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 2.2
-!Updated 20-02-2024
+!Version 2.3
+!Updated 22-02-2024
 
 !Module
 module cellmesh2d_mesh_generation_mod
@@ -38,7 +38,7 @@ integer(in) :: MaxValence,Nmerge,Nmerge_fail,nmiter,nifail
 real(dp), dimension(:), allocatable :: Cvol
 
 !AD_Tree data
-integer(in) :: Ndim,node_minDIVsize
+integer(in) :: ndim,node_minDIVsize
 real(dp) :: global_target_pad
 type(tree_data) :: surface_adtree
 
@@ -54,7 +54,7 @@ MaxValence = 4
 global_target_pad = 0.0d0
 
 !Adtree number of dimensions (4)
-Ndim = 4
+ndim = 4
 
 !Set minimum divisible node size within the AD tree 
 node_minDIVsize = cm2dopt%ADTminNodedivsize
@@ -280,7 +280,7 @@ if (cm2dopt%glink_con == 1) then
     if (cm2dopt%dispt == 1) then
         write(*,'(A)') '--> constructing volume-surface gradient coupling matrix'
     end if
-    call construct_surfvol_grad_coupling(volume_mesh,surface_mesh,Ndim,node_minDIVsize,global_target_pad,cm2dopt)
+    call construct_surfvol_grad_coupling(volume_mesh,surface_mesh,ndim,cm2dopt%ADTminNodedivsize,global_target_pad,cm2dopt)
 end if 
 
 !Completion of mesh construction display ----------------------

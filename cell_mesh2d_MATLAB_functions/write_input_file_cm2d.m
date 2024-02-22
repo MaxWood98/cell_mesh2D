@@ -3,12 +3,12 @@
 %Univeristy of Bristol - Department of Aerospace Engineering
 
 %Version 6.3
-%Updated 20-02-2024
+%Updated 22-02-2024
 
 %Function -----------------------------------------------------------------
 function [] = write_input_file_cm2d(cm2dopt)
 fid = fopen('io\cell_mesh2d_options.dat','w+');
-    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.8.1)');
+    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.9.4)');
     fprintf(fid,'%s \n',' ');
     
     fprintf(fid,'%s \n','#=== General Options =================================');
@@ -113,21 +113,27 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s \n',' ');  
     fprintf(fid,'%s \n','#Number of layers within the inflation layer (determine automatically if zero)');
     fprintf(fid,'%s %d \n','inflayer_nlayer =',cm2dopt.inflayer_nlayer);
-    fprintf(fid,'%s \n',' ');  
-    % fprintf(fid,'%s \n','#Inflation layer first layer approximate height');
-    % fprintf(fid,'%s %f \n','inflayer_h0 =',cm2dopt.inflayer_h0);
-    % fprintf(fid,'%s \n',' ');  
-    fprintf(fid,'%s \n','#Inflation layer evening weight (0->1)');
-    fprintf(fid,'%s %f \n','inflayer_we =',cm2dopt.inflayer_we);
-    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n',' ');    
     fprintf(fid,'%s \n','#Inflation layer differencing weight (0->1)');
     fprintf(fid,'%s %f \n','inflayer_wd =',cm2dopt.inflayer_wd);
     fprintf(fid,'%s \n',' ');  
-    fprintf(fid,'%s \n','#Inflation layer convex evening penalty (0->1)');
-    fprintf(fid,'%s %f \n','inflayer_cvxep =',cm2dopt.inflayer_cvxep);
-    fprintf(fid,'%s \n',' ');  
     fprintf(fid,'%s \n','#Inflation layer convex differencing penalty (0->1)');
     fprintf(fid,'%s %f \n','inflayer_cvxdp =',cm2dopt.inflayer_cvxdp);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer evening weight (0->1)');
+    fprintf(fid,'%s %f \n','inflayer_we =',cm2dopt.inflayer_we);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer evening bias base value');
+    fprintf(fid,'%s %f \n','inflayer_ebcbase =',cm2dopt.inflayer_ebcbase);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer evening number of flood iterations');
+    fprintf(fid,'%s %d \n','inflayer_enflood =',cm2dopt.inflayer_enflood);
+    fprintf(fid,'%s \n',' '); 
+    fprintf(fid,'%s \n','#Inflation layer evening number of sub-iterations');
+    fprintf(fid,'%s %d \n','inflayer_ensubiter =',cm2dopt.inflayer_ensubiter);
+    fprintf(fid,'%s \n',' ');  
+    fprintf(fid,'%s \n','#Inflation layer evening length ratio bound (>=1)');
+    fprintf(fid,'%s %f \n','inflayer_lreb =',cm2dopt.inflayer_lreb);
     fprintf(fid,'%s \n',' ');  
 
     fprintf(fid,'%s \n','#=== Mesh Smoothing Options ==========================');

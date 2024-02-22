@@ -34,7 +34,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.9.0 || 20/02/2024         |'
+    write(*,'(A)')'|        Version 0.9.4 || 22/02/2024         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'
@@ -109,7 +109,7 @@ elseif (cm2dopt%mode == 'mesh') then !mesh generation mode
         call inflate_geometry(surface_mesh,cm2dopt)
     end if
 
-    !Construct mesh (base cut-cell)
+    !Construct mesh 
     if (cm2dopt%dispt == 1) then
         write(*,'(A)') '--> constructing mesh'
     end if

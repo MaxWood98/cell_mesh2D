@@ -26,7 +26,7 @@ cm2dopt.boundary_dir = 'in';       %Boundary normal direction switch in to / out
 
 %Cut-Cell mesh options ====================================================
 %Quadtree options
-cm2dopt.nrefine = 11;              %Maximum refinement level 
+cm2dopt.nrefine = 12;              %Maximum refinement level 
 cm2dopt.nrefineB = 0;              %Maximum additional refinement levels in high curvature regions
 cm2dopt.ncell_max = 200000;        %Maximum number of cells
 cm2dopt.nrflood_i = 12;            %Refinement adjacency flooding iterations at the first refinement
@@ -44,7 +44,7 @@ cm2dopt.ymax = 11.8;               %ymin
 
 %Mesh cleaning options
 cm2dopt.eminlen = 1e-8;            %Minimum edge length as a fraction of an undeformed cell edge length at each refienemnt level 
-cm2dopt.srfeminlen = 0.3;          %Minimum surface edge length as a fraction of an undeformed cell edge length at each refienemnt level 
+cm2dopt.srfeminlen = 0.25;         %Minimum surface edge length as a fraction of an undeformed cell edge length at each refienemnt level 
 cm2dopt.cminvol = 0.1;             %Volume fraction of an undeformed cell at each refinement level below which a cell is classed as a sliver cell
 cm2dopt.srfinclean = 'no';         %Allow cleaning of the input surface geometry 
 
@@ -60,12 +60,15 @@ cm2dopt.surfRcurvNpts = 10;        %Number of vertices used to estimate local su
 
 %Inflation layer options 
 cm2dopt.build_inflayer = 'yes';    %Toggle construction of an inflation layer (yes | no)
-cm2dopt.inflayer_height = 0.075;   %Inflation layer approximate height
+cm2dopt.inflayer_height = 0.05;    %Inflation layer approximate height
 cm2dopt.inflayer_nlayer = 0;       %Number of layers within the inflation layer (determine automatically if zero)
+cm2dopt.inflayer_wd = 0.2;         %Inflation layer differencing weight (0->1)
+cm2dopt.inflayer_cvxdp = 0.2;      %Inflation layer convex differencing penalty (0->1)
 cm2dopt.inflayer_we = 0.2;         %Inflation layer evening weight (0->1)
-cm2dopt.inflayer_wd = 200;         %Inflation layer differencing weight (0->1)
-cm2dopt.inflayer_cvxep = 1.0;      %Inflation layer convex evening penalty (0->1)
-cm2dopt.inflayer_cvxdp = 0.05;      %Inflation layer convex differencing penalty (0->1)
+cm2dopt.inflayer_ebcbase = 0.1;    %Inflation layer concave evening bias base value
+cm2dopt.inflayer_enflood = 20;     %Inflation layer evening number of flood iterations
+cm2dopt.inflayer_ensubiter = 10;   %Inflation layer evening number of sub-iterations
+cm2dopt.inflayer_lreb = 1.0;       %Inflation layer evening length ratio bound (>=1)
 
 %Mesh smoothing options
 cm2dopt.nsstype = 0;               %Near surface smoothing type (0 = 'none' | 1 = 'Laplacian')
@@ -194,21 +197,25 @@ patch('vertices',vtx,'faces',edge,'EdgeAlpha',1.0,'Marker','none');
 %Plot object surface 
 patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[0.1 0.1 1],'MarkerEdgeColor','b');
 
-% vtgt = 322;
+% vtgt = 1;
+% plot(vertices(vtgt,1),vertices(vtgt,2),'g*');
+% 
+% vtgt = 3;
 % plot(vertices(vtgt,1),vertices(vtgt,2),'g*');
 
-%Plot boundary conditions 
-for ii=1:Nedge
-    if cell_lr(ii,1) == -1 %wall
-        % patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
-    elseif cell_lr(ii,1) == -2 %far field
-        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','b');
-    elseif cell_lr(ii,1) == -3 || cell_lr(ii,1) == -5 || cell_lr(ii,1) == -6 %inflow
-        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','g');
-    elseif cell_lr(ii,1) == -4 || cell_lr(ii,1) == -7 %outflow
-        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','r');
-    end
-end
+
+% %Plot boundary conditions 
+% for ii=1:Nedge
+%     if cell_lr(ii,1) == -1 %wall
+%         % patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
+%     elseif cell_lr(ii,1) == -2 %far field
+%         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','b');
+%     elseif cell_lr(ii,1) == -3 || cell_lr(ii,1) == -5 || cell_lr(ii,1) == -6 %inflow
+%         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','g');
+%     elseif cell_lr(ii,1) == -4 || cell_lr(ii,1) == -7 %outflow
+%         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','r');
+%     end
+% end
 
 % %Plot surface and volume gradients 
 % grad_surf = load('io/gradient_surf.dat');
@@ -263,8 +270,12 @@ end
 
 
 
-% vtxtest = load('io/vtxtest120');
+% vtxtest = load('io/vtxtest30');
 % patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[0 1 0]);
+% 
+% vtxtest = load('io/vtxtest31');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[0 1 1]);
+% 
 
 
 % vtxtest1 = load('io/vtx_level');
@@ -272,12 +283,16 @@ end
 
 
 
-% vtxtest1 = load('io/vtxtestL3');
+% vtxtest1 = load('io/vtxtestL1');
 % patch('vertices',vtxtest1,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+
+% ndir = load('io/ndir');
+% quiver(vtxtest1(:,1),vtxtest1(:,2),ndir(:,1),ndir(:,2),0.01,'b','maxheadsize',0.01)
+
 
 % vtxtest2 = load('io/vtxtestL2');
 % patch('vertices',vtxtest2,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
-
+% 
 % vtxtest3 = load('io/vtxtestL3');
 % patch('vertices',vtxtest3,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
 % 
@@ -299,6 +314,26 @@ end
 % plot(vtxfull(2484,1),vtxfull(2484,2),'b*');
 % plot(vtxfull(2612,1),vtxfull(2612,2),'g*');
 
+
+% vtxtest = load('io/vtxtest');
+% plot(vtxtest(:,1),vtxtest(:,2),'r.');
+% patch('vertices',vtxtest,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[1 0 0]);
+% 
+% ndir = load('io/ndir');
+% quiver(vtxtest(:,1),vtxtest(:,2),ndir(:,1),ndir(:,2),0.05,'b','maxheadsize',0.01)
+
+% evenbvtx = load('io/evenbvtx');
+% plot(evenbvtx(:,1),evenbvtx(:,2),'g*');
+
+% vtgt = 97;
+% plot(vertices(vtgt,1),vertices(vtgt,2),'g*');
+% vtgt = 193;
+% plot(vertices(vtgt,1),vertices(vtgt,2),'r*');
+% 
+% vtgt = 192;
+% plot(vertices(vtgt,1),vertices(vtgt,2),'r*');
+
+
 %Format
 axis equal
 axis tight
@@ -306,7 +341,9 @@ xlabel('x')
 ylabel('y')
 hold off
 
-axis([-0.1699    1.1425   -0.6533    0.6591]);
+axis([-0.15    1.15   -0.5    0.5]);
+
+% axis([-0.1699    1.1425   -0.6533    0.6591]);
 
 % axis([0.9823    1.0247    0.0183    0.0608]);
 
@@ -322,6 +359,35 @@ axis([-0.1699    1.1425   -0.6533    0.6591]);
 % axis([0.1665    0.2349    0.1439    0.2123]);
 
 % axis([-0.0543    0.0789   -0.0619    0.0714]);
+
+% axis([0.9883    1.0234   -0.0196    0.0155]);
+% axis([1.0089    1.0109   -0.0011    0.0009]);
+
+% axis([0.9480    1.0689   -0.0577    0.0635]);
+% axis([0.9959    1.0139   -0.0088    0.0092]);
+
+
+% axis([1.0000    1.0018   -0.0009    0.0009])
+
+% axis([0.9980    1.0043   -0.0031    0.0032]);
+
+
+% axis([0.9592    1.0344   -0.0394    0.0359]);
+
+% axis([0.8671    1.1031   -0.1265    0.1096]);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %% Write geometry as loop 
 

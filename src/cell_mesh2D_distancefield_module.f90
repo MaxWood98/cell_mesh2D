@@ -312,10 +312,10 @@ real(dp) :: phi_grad(volume_mesh%ncell,2)
 real(dp) :: cell_R(volume_mesh%ncell)
 
 !Extract parameters
-kd = 0.2d0
-CFL = 0.9d0
-conresbound = -12.0d0
-niter = 15000
+kd = cm2dopt%dfield_kd
+CFL = cm2dopt%dfield_cfl
+conresbound = cm2dopt%dfield_cres
+niter = cm2dopt%dfield_niter
 
 !Initialise
 cell_phi(:) = 0.0d0 
@@ -442,11 +442,11 @@ do solveiter=1,niter
     !Display 
     dres = log10(sum(abs(cell_R(:)))/volume_mesh%ncell)
     ! dres = log10(sum(abs(cell_R(:))))
-    !if (mod(solveiter,100) == 0) then 
+    if (mod(solveiter,100) == 0) then 
         if (cm2dopt%dispt == 1) then
             write(*,'(A,I0,A,F9.5)') '        ',solveiter,'       ',dres
         end if 
-    !end if 
+    end if 
 
     !Convergence check 
     if (dres .LE. conresbound) then 

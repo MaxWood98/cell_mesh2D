@@ -37,12 +37,14 @@ type cm2d_options
     character(len=:), allocatable :: mode,iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshtype
     character(len=:), allocatable :: glink_type,build_inflayer,srfinclean
     integer(in) :: Nrefine,NrefineB,Ncell_max,Nrefine_flood_i,Nrefine_flood_f,Nrefine_flood_b,inflayer_nlayer
-    integer(in) :: inflayer_nintstep_max,inflayer_nbclinesearch
+    integer(in) :: inflayer_nintstep_max,inflayer_nbclinesearch,dfield_niter,inflayer_enflood,inflayer_ensubiter
+    integer(in) :: inflayer_stepnacheck
     integer(in) :: dispt,NintEmax,glink_con,glink_nnn,glink_nsmooth,ADTmax_depth,ADTminNodedivsize,nlpflood,nlpsmooth,set_mbounds
     integer(in) :: set_customBCs,remFFzones,remISzones,remNCzones,Nsstype,Nzone_cBC,NPsinterp,surface_type,cm2dfailure
     real(dp) :: ADTpadding,far_field_bound,sEminLength,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y
     real(dp) :: mxmin,mxmax,mymin,mymax,RBF_relaxP,RBF_relaxD,RBF_rsup,vtx_sharp_dpval
-    real(dp) :: inflayer_height,inflayer_eveningstepsize,inflayer_dvstepsize,inflayer_h0,inflayer_cvxep,inflayer_cvxdp
+    real(dp) :: dfield_cfl,dfield_kd,dfield_cres,inflayer_enormw
+    real(dp) :: inflayer_height,inflayer_ew,inflayer_dvw,inflayer_h0,inflayer_cvxep,inflayer_cvxdp,inflayer_lreb,inflayer_ebcbase
     integer(in), dimension(:), allocatable :: BC_zone_bc
     real(dp), dimension(:,:), allocatable :: BC_zone_coords
 end type cm2d_options

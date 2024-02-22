@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 7.0
-!Updated 20-02-2024
+!Version 7.1
+!Updated 22-02-2024
 
 !Module
 module cellmesh2d_io_mod
@@ -162,12 +162,18 @@ cm2dopt%build_inflayer = 'no'
 cm2dopt%inflayer_height = 0.075d0 
 cm2dopt%inflayer_nlayer = 0
 cm2dopt%inflayer_nintstep_max = 10000
-cm2dopt%inflayer_eveningstepsize = 0.2d0 
-cm2dopt%inflayer_dvstepsize = 200.0d0 
 cm2dopt%inflayer_h0 = 0.01d0 
-cm2dopt%inflayer_cvxep = 1.0d0 
-cm2dopt%inflayer_cvxdp = 0.1d0
 cm2dopt%inflayer_nbclinesearch = 100
+cm2dopt%inflayer_dvw = 0.1d0 
+cm2dopt%inflayer_cvxdp = 0.05d0
+cm2dopt%inflayer_ew = 0.1d0 
+cm2dopt%inflayer_ebcbase = 0.1d0 
+cm2dopt%inflayer_enormw = 0.25d0 
+cm2dopt%inflayer_enflood = 50
+cm2dopt%inflayer_ensubiter = 10
+cm2dopt%inflayer_cvxep = 1.0d0 
+cm2dopt%inflayer_lreb = 1.0d0 
+cm2dopt%inflayer_stepnacheck = 2
 
 !Set mesh smoothing options 
 cm2dopt%Nsstype = 0
@@ -195,6 +201,12 @@ cm2dopt%set_customBCs = 0
 cm2dopt%remFFzones = 0 
 cm2dopt%remNCzones = 0 
 cm2dopt%remISzones = 0 
+
+!Set distance field options 
+cm2dopt%dfield_niter = 10000
+cm2dopt%dfield_cfl = 0.5d0 
+cm2dopt%dfield_kd = 0.05d0 
+cm2dopt%dfield_cres = -8.0d0 
 return 
 end subroutine set_default_options
 
@@ -258,11 +270,17 @@ call set_real_opt(cm2dopt%inflayer_height,11,'inflayer_height')
 call set_int_opt(cm2dopt%inflayer_nlayer,11,'inflayer_nlayer')
 call set_real_opt(cm2dopt%inflayer_h0,11,'inflayer_h0')
 call set_int_opt(cm2dopt%inflayer_nintstep_max,11,'inflayer_nintstep_max')
-call set_real_opt(cm2dopt%inflayer_eveningstepsize,11,'inflayer_we')
-call set_real_opt(cm2dopt%inflayer_dvstepsize,11,'inflayer_wd')
-call set_real_opt(cm2dopt%inflayer_cvxep,11,'inflayer_cvxep')
+call set_real_opt(cm2dopt%inflayer_dvw,11,'inflayer_wd')
 call set_real_opt(cm2dopt%inflayer_cvxdp,11,'inflayer_cvxdp')
+call set_real_opt(cm2dopt%inflayer_ew,11,'inflayer_we')
+call set_real_opt(cm2dopt%inflayer_ebcbase,11,'inflayer_ebcbase')
+call set_real_opt(cm2dopt%inflayer_enormw,11,'inflayer_enormw')
+call set_int_opt(cm2dopt%inflayer_enflood,11,'inflayer_enflood')
+call set_int_opt(cm2dopt%inflayer_ensubiter,11,'inflayer_ensubiter')
+call set_real_opt(cm2dopt%inflayer_cvxep,11,'inflayer_cvxep')
+call set_real_opt(cm2dopt%inflayer_lreb,11,'inflayer_lreb')
 call set_int_opt(cm2dopt%inflayer_nbclinesearch,11,'inflayer_nbclinesearch')
+call set_int_opt(cm2dopt%inflayer_stepnacheck,11,'inflayer_stepnacheck')
 
 !Set mesh smoothing options 
 call set_int_opt(cm2dopt%Nsstype,11,'smoothingtype')
@@ -290,6 +308,9 @@ call set_int_opt(cm2dopt%set_customBCs,11,'setcustombcs')
 call set_int_opt(cm2dopt%remFFzones,11,'remffczones')
 call set_int_opt(cm2dopt%remNCzones,11,'remncczones')
 call set_int_opt(cm2dopt%remISzones,11,'remwallonlyzones')
+
+!Set distance field options 
+
 
 !Close file 
 close(11)

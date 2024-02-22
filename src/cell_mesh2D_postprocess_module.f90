@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 5.3
-!Updated 20-02-2024
+!Version 5.4
+!Updated 22-02-2024
 
 !Module
 module cellmesh2d_postprocess_mod
@@ -985,6 +985,20 @@ type(surface_data) :: surface_mesh
 integer(in) :: vv,Nvsurf,segtgt
 real(dp) :: segfrac
 real(dp) :: vs1(2),vs2(2)
+
+!Deallocate existing arrays 
+if (allocated(volume_mesh%surf_vtx)) then 
+    deallocate(volume_mesh%surf_vtx)
+end if 
+if (allocated(volume_mesh%surf_vtx_seg)) then 
+    deallocate(volume_mesh%surf_vtx_seg)
+end if 
+if (allocated(volume_mesh%surf_vtx_segfrac)) then 
+    deallocate(volume_mesh%surf_vtx_segfrac)
+end if 
+if (allocated(volume_mesh%surf_linkindex)) then 
+    deallocate(volume_mesh%surf_linkindex)
+end if 
 
 !Count surface linked vertices
 Nvsurf = 0 
