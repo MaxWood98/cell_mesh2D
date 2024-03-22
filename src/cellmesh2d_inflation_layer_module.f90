@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.5
-!Updated 23-02-2024
+!Version 0.6
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_inflation_layer_mod
@@ -31,7 +31,7 @@ real(dp), dimension(:,:), allocatable :: grow_dir
 type(tree_data) :: surface_adtree
 
 !Construct adtree on base surface geometry 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> constructing AD-tree on target geometry surface mesh'
 end if
 allocate(surface_adtree%tvtx(surface_mesh%nfcs,4))
@@ -50,7 +50,7 @@ if (cm2dopt%inflayer_nlayer == 0) then
     cell_edgelength = cm2dopt%far_field_bound/(2.0d0**(cm2dopt%Nrefine - 1))
     nlevelR = cm2dopt%inflayer_height/cell_edgelength
     cm2dopt%inflayer_nlayer = nint(nlevelR) + 1
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A,I0,A)') '    {assinging ',cm2dopt%inflayer_nlayer,' layers within the inflation layer}'
     end if
 end if 
@@ -86,7 +86,7 @@ call construct_even_bias(even_bias,verticesC,surface_mesh,surface_adtree,cm2dopt
 do ii=1,n_inflayer
 
     !Display
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A,I0)') '    level -> ', ii
     end if
 
@@ -445,7 +445,7 @@ do ii=1,max_int_iter
 
     !Exit if approximate layer height has been reached by h_total
     if (h_total .GE. steplen) then 
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A,I0,A,A,A)') '    {complete at niter = ',ii,' with height = ',real2F0_Xstring(h_total,8_in),'}'
         end if 
         exit
@@ -645,7 +645,7 @@ do ilayer=1,Nlayer
     call update_vslinks(volume_mesh,Nsurfvtx,surface_vertices,surface_vertex_link)
 
     !Display
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A,I0)') '    level -> ', ilayer
     end if 
 end do
@@ -698,7 +698,7 @@ call clean_mesh_shortE(volume_mesh,cm2dopt,cm2dopt%EminLength,-1_in)
 call get_cell_volumes(Cvol,volume_mesh)
 
 !Completion of mesh construction display ----------------------
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> mesh construction completed'
     write(*,'(A,I0,A)') '    {cells: ',volume_mesh%ncell,'}'
     write(*,'(A,I0,A)') '    {edges: ',volume_mesh%nedge,'}'

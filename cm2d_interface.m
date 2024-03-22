@@ -16,15 +16,15 @@ clc
 %% Input
 
 %Filepaths
-cm2dopt.options_filepath = 'cell_mesh2d_options';            %Options filepath
-cm2dopt.surface_filepath = 'io/cell_mesh2d_surface.dat';     %Surface filepath
-cm2dopt.bcondzone_filename = 'cell_mesh2d_bcond_zones';      %Boundary conditions filepath
+cm2dopt.options_filepath = 'cell_mesh2d_options';                 %Options filepath
+cm2dopt.surface_filepath = 'io/cell_mesh2d_surface_SHOPT.dat';     %Surface filepath
+cm2dopt.bcondzone_filename = 'cell_mesh2d_bcond_zones';           %Boundary conditions filepath
 
 %General options 
-cm2dopt.condisp = 1;               %Toggle console display (1 = yes || 0 = no)
+cm2dopt.condisp = 'yes';           %Toggle console display (yes | no)
 
 %Mesh format options 
-cm2dopt.meshtype = 'cutcell';      %Type of mesh (cutcell / su2_cutcell / su2_dual / minD_O)
+cm2dopt.meshtype = 'cutcell';      %Type of mesh (cutcell | su2_cutcell | su2_dual | minD_O)
 cm2dopt.meshinout = 'out';         %Mesh inside or outside of geometry (default out)
 cm2dopt.surface_dir = 'in';        %Surface normal direction switch in to / out of the mesh domain (default in)
 cm2dopt.boundary_dir = 'in';       %Boundary normal direction switch in to / out of the mesh domain (default in)
@@ -32,16 +32,16 @@ cm2dopt.boundary_dir = 'in';       %Boundary normal direction switch in to / out
 %Cut-Cell mesh options ====================================================
 %Quadtree options
 cm2dopt.nrefine = 12;              %Maximum refinement level 
-cm2dopt.nrefineB = 0;              %Maximum additional refinement levels in high curvature regions
+cm2dopt.nrefineB = 2;              %Maximum additional refinement levels in high curvature regions
 cm2dopt.ncell_max = 200000;        %Maximum number of cells
 cm2dopt.nrflood_i = 7;             %Refinement adjacency flooding iterations at the first refinement
 cm2dopt.nrflood_f = 7;             %Refinement adjacency flooding iterations at the final refinement
-cm2dopt.nrflood_b = 2;             %Refinement adjacency flooding iterations on boosted refinement
+cm2dopt.nrflood_b = 4;             %Refinement adjacency flooding iterations on boosted refinement
 cm2dopt.fbound = 20;               %Far field distance from object centre  
-cm2dopt.coffset = [0.0 0.0];       %Object/mesh centre offset (x / y)
+cm2dopt.coffset = [0.0 0.0];       %Object/mesh centre offset (x y)
 
 %Custom domain bound specification 
-cm2dopt.set_mbounds = 0;           %Toggle forcing of custom mesh domain bounds
+cm2dopt.set_mbounds = 'no';        %Set custom mesh domain bounds (yes | no)
 cm2dopt.xmin = 0.2;                %xmin
 cm2dopt.xmax = 11.8;               %xmax
 cm2dopt.ymin = 0.2;                %ymin
@@ -59,12 +59,12 @@ cm2dopt.eintpad = 0.0;             %Edge-geometry intersection search zone paddi
 cm2dopt.int_coin_tol = 1e-8;       %Intersection co-incidence tollerance as fraction of item length  
 
 %Surface format options
-cm2dopt.surftype = 0;              %Geometry surface type (0 = 'simplified' | 1 = 'exact') 
+cm2dopt.surftype = 'simplified';   %Geometry surface type (simplified | exact) 
 cm2dopt.surfRcurvM = 1.0;          %Surface curvature multiplier
 cm2dopt.surfRcurvNpts = 10;        %Number of vertices used to estimate local surface curvature
 
 %Inflation layer options 
-cm2dopt.build_inflayer = 'no';    %Toggle construction of an inflation layer (yes | no)
+cm2dopt.build_inflayer = 'no';     %Toggle construction of an inflation layer (yes | no)
 cm2dopt.inflayer_height = 0.04;    %Inflation layer approximate height
 cm2dopt.inflayer_nlayer = 0;       %Number of layers within the inflation layer (determine automatically if zero)
 cm2dopt.inflayer_wd = 0.1;         %Inflation layer differencing weight (0->1)
@@ -76,7 +76,7 @@ cm2dopt.inflayer_ensubiter = 10;   %Inflation layer evening number of sub-iterat
 cm2dopt.inflayer_lreb = 1.0;       %Inflation layer evening length ratio bound (>=1)
 
 %Mesh smoothing options
-cm2dopt.nsstype = 0;               %Near surface smoothing type (0 = 'none' | 1 = 'Laplacian')
+cm2dopt.nsstype = 'none';          %Near surface smoothing type (none | laplacian)
 cm2dopt.nsvtxflood = 5;            %Vertex selection flooding iterations from surfaces
 cm2dopt.nlpsmooth = 10;            %Smoothing iterations 
 
@@ -85,9 +85,9 @@ cm2dopt.adtree_spad = 0.0;         %Maximum padding size of adtree search boundi
 cm2dopt.adtree_maxd = 10;          %AD tree maximum depth in terms of dimension cycles (tree is 4d)
 cm2dopt.adtree_mindivnsize = 10;   %AD tree minimum divisible node size 
 
-%Gradient linking options
-cm2dopt.glink_con = 0;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
-cm2dopt.glinktype = 'int';         %Gradient linking type (rbf or int)
+%Gradient projection options
+cm2dopt.glink_con = 'no';          %Construct and export volume to surface gradient interpolation (yes | no)
+cm2dopt.glinktype = 'int';         %Gradient linking type (rbf | int)
 cm2dopt.glink_nnn = 80;            %Number of nearest neighbours to use for RBF volume to surface gradient interpolation
 cm2dopt.glink_nsmooth = 0;         %Number of vertices each side used to smooth the gradient at each surface vertex
 
@@ -98,10 +98,10 @@ cm2dopt.RBF_relaxP = 0.01;         %RBF interpolation relaxation parameter
 
 %Boundary condition options ===============================================
 %Boundary condition options 
-cm2dopt.set_custom_bc = 0;         %Set custom boundary conditions in specifed regions (1 = yes | 0 = no)
-cm2dopt.rem_ffzones = 0;           %Remove any region of the mesh connected to a far field boundary condition
-cm2dopt.rem_nczones = 0;           %Remove any region of the mesh connected to a non custom set boundary condition
-cm2dopt.rem_iszones = 0;           %Remove any isolated region of the mesh connected only to a wall boundary condition 
+cm2dopt.set_custom_bc = 'no';      %Set custom boundary conditions in specifed regions (yes | no)
+cm2dopt.rem_ffzones = 'no';        %Remove any region of the mesh connected to a far field boundary condition (yes | no)
+cm2dopt.rem_nczones = 'no';        %Remove any region of the mesh connected to a non custom set boundary condition (yes | no)
+cm2dopt.rem_iszones = 'no';        %Remove any isolated region of the mesh connected only to a wall boundary condition (yes | no)
 
 %Boundary condition zone bounds [xmin xmax ymin ymax]
 % BC_zones_loc = [-1.0 1.0 0.5 3.5;
@@ -200,7 +200,7 @@ patch('vertices',vtx,'faces',edge,'EdgeAlpha',1.0,'Marker','none');
 
 
 %Read input surface file 
-[~,~,vertices,connectivity] = import_cell_mesh2d_surface('io/cell_mesh2d_surface.dat');
+[~,~,vertices,connectivity] = import_surface_cm2d(cm2dopt.surface_filepath);
 
 %Plot object surface 
 patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','EdgeColor',[0.1 0.1 1],'MarkerEdgeColor','b');

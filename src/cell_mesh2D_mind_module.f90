@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.1
-!Updated 16-02-2023
+!Version 0.2
+!Updated 22-03-2024
 
 !Module 
 module cellmesh2d_mind_mod
@@ -28,13 +28,13 @@ real(dp) :: grad_d(volume_mesh%ncell,2)
 type(meshdata) :: meshdat
 
 !Preprocess mesh 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> preprocessing mesh for distance field construction'
 end if
 call preprocess_mesh(meshdat,volume_mesh)
 
 !Construct distance field 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> constructing distance field'
 end if
 BCactive(:) = 0

@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.1
-!Updated 07-02-2023
+!Version 0.2
+!Updated 22-03-2024
 
 !Module 
 module cellmesh2d_distF_mod
@@ -324,7 +324,7 @@ cell_phi(:) = 0.0d0
 ! call guess_distance_field(cell_phi,BCactive,volume_mesh,meshdat)
 
 !Solve
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)')   '    +------------+------------+'
     write(*,'(A,A)') '    |    ittn    |','    dres    |'
 end if
@@ -443,14 +443,14 @@ do solveiter=1,niter
     dres = log10(sum(abs(cell_R(:)))/volume_mesh%ncell)
     ! dres = log10(sum(abs(cell_R(:))))
     if (mod(solveiter,100) == 0) then 
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A,I0,A,F9.5)') '        ',solveiter,'       ',dres
         end if 
     end if 
 
     !Convergence check 
     if (dres .LE. conresbound) then 
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A)') '           ** resconv **'
             write(*,'(A,I0,A,F9.5)') '        ',solveiter,'       ',dres
         end if 

@@ -34,14 +34,15 @@ end type cell_data
 
 !Options data type
 type cm2d_options
+    logical :: dispt
     character(len=:), allocatable :: mode,iopath,optpath,surface_filename,options_filename,bcondzone_filename
-    character(len=:), allocatable :: surface_dir,boundary_dir,meshinout,meshtype
-    character(len=:), allocatable :: glink_type,build_inflayer,srfinclean
+    character(len=:), allocatable :: surface_dir,boundary_dir,meshinout,meshtype,surface_type,Nsstype,glink_con_exp
+    character(len=:), allocatable :: glink_type,build_inflayer,srfinclean,set_mbounds,set_customBCs,remFFzones,remISzones,remNCzones
     integer(in) :: Nrefine,NrefineB,Ncell_max,Nrefine_flood_i,Nrefine_flood_f,Nrefine_flood_b,inflayer_nlayer
     integer(in) :: inflayer_nintstep_max,inflayer_nbclinesearch,dfield_niter,inflayer_enflood,inflayer_ensubiter
     integer(in) :: inflayer_stepnacheck
-    integer(in) :: dispt,NintEmax,glink_con,glink_nnn,glink_nsmooth,ADTmax_depth,ADTminNodedivsize,nlpflood,nlpsmooth,set_mbounds
-    integer(in) :: set_customBCs,remFFzones,remISzones,remNCzones,Nsstype,Nzone_cBC,NPsinterp,surface_type,cm2dfailure
+    integer(in) :: NintEmax,glink_nnn,glink_nsmooth,ADTmax_depth,ADTminNodedivsize,nlpflood,nlpsmooth
+    integer(in) :: Nzone_cBC,NPsinterp,cm2dfailure
     real(dp) :: ADTpadding,far_field_bound,sEminLength,EminLength,CminVol,elenpad,intcointol,surfRcurvM,om_offset_x,om_offset_y
     real(dp) :: mxmin,mxmax,mymin,mymax,RBF_relaxP,RBF_relaxD,RBF_rsup,vtx_sharp_dpval
     real(dp) :: dfield_cfl,dfield_kd,dfield_cres,inflayer_enormw

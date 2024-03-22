@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 4.0
-!Updated 20-02-2024
+!Version 4.1
+!Updated 22-03-2024
 
 !Module 
 module cellmesh2d_mesh_build_exact_mod
@@ -53,7 +53,7 @@ elseif (cm2dopt%meshinout == 'out') then !mesh external
 end if 
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {constructing base complete volume mesh}'
 end if 
 
@@ -61,7 +61,7 @@ end if
 call build_full_mesh_EXACT(volume_mesh_full,qt_mesh,cell_keep,cell_2_qtcell,eopposite,celledges)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {intersecting mesh with surface geometry}'
 end if 
 

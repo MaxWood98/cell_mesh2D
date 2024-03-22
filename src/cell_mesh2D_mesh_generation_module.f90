@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 2.3
-!Updated 22-02-2024
+!Version 2.4
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_mesh_generation_mod
@@ -79,7 +79,7 @@ obj_cx = 0.5d0*(obj_max_x + obj_min_x)
 obj_cy = 0.5d0*(obj_max_y + obj_min_y)
 
 !Displays
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') ' '
     write(*,'(A)') '== Properties =========================='
     write(*,"(A,I0)") '   number of vertices = ', surface_mesh%nvtx
@@ -93,7 +93,7 @@ if (cm2dopt%cm2dfailure == 1) then
 end if 
 
 !Construct AD_Tree on target mesh ------------------------------------------
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> constructing AD-tree on target geometry surface mesh'
 end if
 
@@ -110,7 +110,7 @@ end do
 call build_ADtree(surface_adtree,ndim,cm2dopt%ADTmax_depth,node_minDIVsize,tvtx,global_target_pad,cm2dopt%dispt)
 
 !Quadtree construction -------------------------------------------------------
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> constructing mesh quadtree'
 end if
 
@@ -127,7 +127,7 @@ if (cm2dopt%cm2dfailure == 1) then
 end if 
 
 !Construct volume mesh -------------------------------------------------------
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> constructing full volume mesh'
 end if
 call construct_mesh_EXACT(volume_mesh,surface_mesh,cell_keep,vtx_external,vtx_type1,qt_mesh,surface_adtree,cm2dopt)
@@ -150,12 +150,12 @@ call remap_cell_indecies(volume_mesh)
 
 !Postprocess complete mesh ---------------------------------------------------
 !Apply custom boundary conditions in target regions 
-if (cm2dopt%set_customBCs == 1) then 
+if (cm2dopt%set_customBCs == 'yes') then 
     call set_custom_bcs(volume_mesh,cm2dopt) 
 end if 
 
 !Remove mesh zones with any far field boundary conditions 
-if (cm2dopt%remFFzones == 1) then 
+if (cm2dopt%remFFzones == 'yes') then 
     call remove_farfield_adjacent(volume_mesh) 
     if (volume_mesh%nedge == 0) then !Check for complete mesh removal 
         cm2dopt%cm2dfailure = 1
@@ -165,7 +165,7 @@ if (cm2dopt%remFFzones == 1) then
 end if
 
 !Remove mesh zones with no custom boundary conditions 
-if (cm2dopt%remNCzones == 1) then 
+if (cm2dopt%remNCzones == 'yes') then 
     call remove_ncb_adjacent(volume_mesh,cm2dopt)
     if (volume_mesh%nedge == 0) then !Check for complete mesh removal 
         cm2dopt%cm2dfailure = 1
@@ -175,7 +175,7 @@ if (cm2dopt%remNCzones == 1) then
 end if
 
 !Remove mesh zones that are only connected to wall boundary conditions (isolated regions of the mesh with no inflow/outflow possible)
-if (cm2dopt%remISzones == 1) then 
+if (cm2dopt%remISzones == 'yes') then 
     call remove_isolated_regions(volume_mesh)
     if (volume_mesh%nedge == 0) then !Check for complete mesh removal 
         cm2dopt%cm2dfailure = 1
@@ -222,8 +222,8 @@ if (cm2dopt%cm2dfailure == 1) then
 end if 
 
 !Simplify the mesh surface within each cell if simplified surface requested
-if (cm2dopt%surface_type == 0) then     
-    if (cm2dopt%dispt == 1) then
+if (cm2dopt%surface_type == 'simplified') then     
+    if (cm2dopt%dispt) then
         write(*,'(A)') '--> constructing simplified surface geometry'
     end if
     call simplify_surface(volume_mesh)
@@ -234,7 +234,7 @@ call clean_mesh_shortE(volume_mesh,cm2dopt,cm2dopt%sEminLength,-1_in)
 
 !Merge surface adjacent cells consisting of only two edges after simplification collapse
 call merge_2edge_surfcells(Nmerge,volume_mesh)
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A,I0,A)') '    {eliminated ',Nmerge,' collapsed surface cells}'
 end if 
 
@@ -268,7 +268,7 @@ end if
 call build_surface_links(volume_mesh,surface_mesh)
 
 !Apply near surface mesh smoothing 
-if (cm2dopt%Nsstype == 1) then 
+if (cm2dopt%Nsstype == 'laplacian') then 
     call nearsurf_lap_smooth(volume_mesh,cm2dopt,MaxValence)
 end if 
 
@@ -276,15 +276,15 @@ end if
 call get_cell_volumes(Cvol,volume_mesh)
 
 !Construct gradient mesh to surface coupling matrix if requeted 
-if (cm2dopt%glink_con == 1) then 
-    if (cm2dopt%dispt == 1) then
+if (cm2dopt%glink_con_exp == 'yes') then 
+    if (cm2dopt%dispt) then
         write(*,'(A)') '--> constructing volume-surface gradient coupling matrix'
     end if
     call construct_surfvol_grad_coupling(volume_mesh,surface_mesh,ndim,cm2dopt%ADTminNodedivsize,global_target_pad,cm2dopt)
 end if 
 
 !Completion of mesh construction display ----------------------
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> mesh construction completed'
     write(*,'(A,I0,A)') '    {cells: ',volume_mesh%ncell,'}'
     write(*,'(A,I0,A)') '    {edges: ',volume_mesh%nedge,'}'

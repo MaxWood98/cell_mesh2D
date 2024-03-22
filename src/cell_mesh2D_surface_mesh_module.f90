@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.7
-!Updated 20-02-2024
+!Version 0.8
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_surface_mod
@@ -97,7 +97,7 @@ do ii=1,surface_mesh%nvtx
     !Tag as sharp if required
     if (faceang .LE. cm2dopt%vtx_sharp_dpval) then 
         surface_mesh%vtx_sharp(ii) = 1
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A,I0,A)') '    {setting sharp vertex -> ',ii,'}'
         end if
     end if 
@@ -254,7 +254,7 @@ end do
 nrem = NfaceRem
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A,I0,A)') '    {removed ',NfaceRem,' zero length faces}'
 end if
 return 
@@ -291,7 +291,7 @@ if (vol_total .LT. 0.0d0) then
         surface_mesh%faces(ff,1) = ftemp(2)
         surface_mesh%faces(ff,2) = ftemp(1)
     end do 
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A)') '    {surface mesh re-oriented for positive volume}'
     end if
 end if 

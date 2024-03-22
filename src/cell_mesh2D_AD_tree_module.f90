@@ -36,7 +36,8 @@ subroutine build_ADtree(tree_current,ndim,max_depth,node_minDIVsize,tvtx,dpad,di
 implicit none 
 
 !Variables - Import
-integer(in) :: ndim,max_depth,node_minDIVsize,disp_toggle
+logical :: disp_toggle
+integer(in) :: ndim,max_depth,node_minDIVsize
 real(dp) :: dpad
 real(dp), dimension(:,:) :: tvtx
 type(tree_data) :: tree_current
@@ -239,7 +240,8 @@ subroutine ad_tree_construct(adtreeI,Nnode,ndim,max_depth,node_minDIVsize,tvtx,d
 implicit none 
 
 !Variables - Import
-integer(in) :: ndim,max_depth,Nnode,node_minDIVsize,disp_toggle
+logical :: disp_toggle
+integer(in) :: ndim,max_depth,Nnode,node_minDIVsize
 real(dp), dimension(:,:) :: tvtx
 type(ADtree_data), dimension(:), allocatable :: adtreeI
 
@@ -387,7 +389,7 @@ do rr=1,max_depth*ndim
     end if
 
     !Display
-    if (disp_toggle == 1) then
+    if (disp_toggle) then
         write(*,'(A,I0,A,I0,A)') '    level -> ', rr ,' {dimension ',cindex,'}'
     end if 
     
@@ -418,7 +420,7 @@ do rr=1,Nnode
 end do 
 
 !Exit display
-if (disp_toggle == 1) then
+if (disp_toggle) then
     write(*,'(A,I0,A)') '    {constructed ',childins-1,' nodes}'
 end if 
 return

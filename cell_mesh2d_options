@@ -1,11 +1,11 @@
-#cell_mesh2d options file (version 0.9.5) 
+#cell_mesh2d options file (version 0.9.7) 
   
 #=== General Options ================================= 
-#Toggle console display (1 = yes || 0 = no) 
-condisp = 1 
+#Toggle console display (yes | no) 
+condisp = yes 
   
 #=== Mesh Format Options ============================= 
-#Type of mesh (cutcell / su2_cutcell / su2_dual / minD_O) 
+#Type of mesh (cutcell | su2_cutcell | su2_dual | minD_O) 
 meshtype = cutcell 
   
 #Mesh inside or outside of geometry 
@@ -22,7 +22,7 @@ bndrynormdir = in
 nqtrefine = 12 
   
 #Maximum additional refinement levels in high curvature regions 
-nboostqtrefine = 0 
+nboostqtrefine = 2 
   
 #Maximum number of cells 
 ncellmax = 200000 
@@ -34,7 +34,7 @@ nadjfloodi = 7
 nadjfloodf = 7 
   
 #Refinement adjacency flooding iterations on boosted refinement 
-nadjfloodb = 2 
+nadjfloodb = 4 
   
 #Far field distance from object centre 
 farfielddist = 20.000000 
@@ -44,8 +44,8 @@ offsett_x = 0.000000
 offsett_y = 0.000000 
   
 #=== Custom Domain Bound Specification  ============== 
-#Enable custom mesh domain bounds (1 = yes | 0 = no) 
-forcebounds =  0 
+#Set custom mesh domain bounds (yes | no) 
+forcebounds = no 
   
 #Mesh domain bounds (xmin xmax ymin ymax) 
 bound_xmin = 2.000000E-01 
@@ -77,8 +77,8 @@ eintpad = 0.000000E+00
 intcointol = 1.000000E-08 
   
 #=== Surface Format Options ========================== 
-#Geometry surface type (0 = simplified | 1 = exact) 
-surftype = 0 
+#Geometry surface type (simplified | exact) 
+surftype = simplified 
   
 #Surface curvature multiplier 
 scurvmult = 1.000000 
@@ -118,8 +118,8 @@ inflayer_ensubiter = 10
 inflayer_lreb = 1.000000 
   
 #=== Mesh Smoothing Options ========================== 
-#Near surface smoothing type (0 = none | 1 = Laplacian) 
-smoothingtype =  0 
+#Near surface smoothing type (none | laplacian) 
+smoothingtype = none 
   
 #Vertex selection flooding iterations from surfaces 
 smoothingnflood =  5 
@@ -137,9 +137,9 @@ adtndimcycle = 10
 #AD tree minimum divisible node size 
 adtmindivnsize = 10 
   
-#=== Gradient Interpolation Options ================== 
-#Construct volume to surface gradient interpolation (1 = yes | 0 = no) 
-glinkconstruct = 0 
+#=== Gradient Projection Options ===================== 
+#Construct and export volume to surface gradient interpolation (yes | no) 
+glinkconstructexp = no 
   
 #Gradient linking type (rbf or int) 
 glinktype = int 
@@ -161,15 +161,15 @@ rbfrrelax = 0.010000
 rbfrelaxp = 0.010000 
   
 #=== Boundary Condition Options ====================== 
-#Set custom boundary conditions in specifed regions (1 = yes | 0 = no) 
-setcustombcs =  0 
+#Set custom boundary conditions in specifed regions (yes | no) 
+setcustombcs = no 
   
-#Remove any region of the mesh connected to a far field boundary condition 
-remffczones = 0 
+#Remove any region of the mesh connected to a far field boundary condition (yes | no) 
+remffczones = no 
   
-#Remove any region of the mesh connected to a non custom set boundary condition 
-remncczones = 0 
+#Remove any region of the mesh connected to a non custom set boundary condition (yes | no) 
+remncczones = no 
   
-#Remove any isolated region of the mesh connected only to a wall boundary condition 
-remwallonlyzones = 0 
+#Remove any isolated region of the mesh connected only to a wall boundary condition (yes | no) 
+remwallonlyzones = no 
   

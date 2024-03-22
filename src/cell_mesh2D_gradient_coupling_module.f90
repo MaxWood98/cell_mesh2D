@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 1.1
-!Updated 12-02-2024
+!Version 1.2
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_gradient_coupling_mod
@@ -59,7 +59,7 @@ do ee=1,Nesurf
 end do 
 
 !Build adtree on this volume surface mesh 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {constructing AD-tree on surface within volume mesh}'
 end if
 allocate(tvtx(Nesurf,4))
@@ -425,7 +425,7 @@ do ee=1,Nesurf
 end do 
 
 !Build adtree on this volume surface mesh 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {constructing AD-tree on surface within volume mesh}'
 end if
 allocate(tvtx(Nesurf,4))
@@ -674,7 +674,7 @@ end if
 gradient_surf_temp(:,:) = gradient_surf(:,:)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {smoothing surface gradients}'
 end if
 

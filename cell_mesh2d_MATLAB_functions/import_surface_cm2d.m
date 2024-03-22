@@ -2,11 +2,11 @@
 %Max Wood - mw16116@bristol.ac.uk
 %Univeristy of Bristol - Department of Aerospace Engineering
 
-%Version 1.1
-%Updated 29-06-2023
+%Version 1.2
+%Updated 22-03-2024
 
 %Function -----------------------------------------------------------------
-function [Nvtx,Nedge,vertices,connectivity] = import_cell_mesh2d_surface(filename)
+function [Nvtx,Nedge,vertices,connectivity] = import_surface_cm2d(filename)
 
     %Read surface file
     fid = fopen(filename);

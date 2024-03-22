@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 5.4
-!Updated 22-02-2024
+!Version 5.6
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_postprocess_mod
@@ -28,7 +28,7 @@ integer(in), dimension(:,:), allocatable :: v2v
 real(dp), dimension(:,:), allocatable :: vposN
 
 !Display 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> laplacian smothing near surfaces'
 end if
 
@@ -73,7 +73,7 @@ do vv=1,volume_mesh%nvtx
         Ntag = Ntag + 1
     end if
 end do 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A,I0,A)') '    {identified ',Ntag,' near surface vertices for smoothing}'
 end if 
 allocate(vtxidxR(Ntag))
@@ -338,11 +338,11 @@ if (Neshort .NE. 0) then
 
     !Display
     if (present(filter_bc)) then 
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A,I0,A,I0,A)') '    {identified and collapsed ',Neshort,' short edges on boundary condition ',filter_bc,'}'
         end if 
     else  
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A,I0,A)') '    {identified and collapsed ',Neshort,' short edges}'
         end if 
     end if 
@@ -618,7 +618,7 @@ if (Ncremove .NE. 0) then
     volume_mesh%ncell = NcellN
 
     !Display
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A,I0,A,I0,A)') '    {identified ',Ncremove,' sliver cells and merged ',Nmerge,' cells}'
         if (Ninvalid .NE. 0) then 
             write(*,'(A,I0,A)') '    {',Ninvalid,' merges prevented due to double adjacency or aspect ratio}'
@@ -896,7 +896,7 @@ volume_mesh%cell_level(:) = cell_levelN(1:Ncell)
 
 !Display
 if (Nbisect .GT. 0) then 
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A,I0,A)') '    {identified and split ',Nbisect,' bisected cells}'
     end if 
 end if 
@@ -1701,7 +1701,7 @@ volume_mesh%nedge = NedgeN
 
 !Display
 if (nremove .GT. 0) then 
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A,I0,A)') '    {removed ',nremove,' double boundary condition edges}'
     end if 
 end if 
@@ -2358,7 +2358,7 @@ volume_mesh%nedge = Nenew
 volume_mesh%nvtx = Nvnew
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A,I0,A)') '    {collapsed ',nintv2,' internal valence two vertices}'
 end if 
 return 

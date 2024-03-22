@@ -8,16 +8,16 @@
 %Function -----------------------------------------------------------------
 function [] = write_input_file_cm2d(cm2dopt)
 fid = fopen(cm2dopt.options_filepath,'w+');
-    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.9.5)');
+    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.9.7)');
     fprintf(fid,'%s \n',' ');
     
     fprintf(fid,'%s \n','#=== General Options =================================');
-    fprintf(fid,'%s \n','#Toggle console display (1 = yes || 0 = no)');
-    fprintf(fid,'%s %d \n','condisp =',cm2dopt.condisp);
+    fprintf(fid,'%s \n','#Toggle console display (yes | no)');
+    fprintf(fid,'%s %s \n','condisp =',cm2dopt.condisp);
     fprintf(fid,'%s \n',' ');
 
     fprintf(fid,'%s \n','#=== Mesh Format Options =============================');
-    fprintf(fid,'%s \n','#Type of mesh (cutcell / su2_cutcell / su2_dual / minD_O)');
+    fprintf(fid,'%s \n','#Type of mesh (cutcell | su2_cutcell | su2_dual | minD_O)');
     fprintf(fid,'%s %s \n','meshtype =',cm2dopt.meshtype);
     fprintf(fid,'%s \n',' ');
     fprintf(fid,'%s \n','#Mesh inside or outside of geometry');
@@ -58,8 +58,8 @@ fid = fopen(cm2dopt.options_filepath,'w+');
     fprintf(fid,'%s \n',' '); 
 
     fprintf(fid,'%s \n','#=== Custom Domain Bound Specification  ==============');
-    fprintf(fid,'%s \n','#Enable custom mesh domain bounds (1 = yes | 0 = no)');
-    fprintf(fid,'%s %d \n','forcebounds = ',cm2dopt.set_mbounds);
+    fprintf(fid,'%s \n','#Set custom mesh domain bounds (yes | no)');
+    fprintf(fid,'%s %s \n','forcebounds =',cm2dopt.set_mbounds);
     fprintf(fid,'%s \n',' ');
     fprintf(fid,'%s \n','#Mesh domain bounds (xmin xmax ymin ymax)');
     fprintf(fid,'%s %E \n','bound_xmin =',cm2dopt.xmin);
@@ -94,8 +94,8 @@ fid = fopen(cm2dopt.options_filepath,'w+');
     fprintf(fid,'%s \n',' ');
         
     fprintf(fid,'%s \n','#=== Surface Format Options ==========================');
-    fprintf(fid,'%s \n','#Geometry surface type (0 = simplified | 1 = exact)');
-    fprintf(fid,'%s %d \n','surftype =',cm2dopt.surftype);
+    fprintf(fid,'%s \n','#Geometry surface type (simplified | exact)');
+    fprintf(fid,'%s %s \n','surftype =',cm2dopt.surftype);
     fprintf(fid,'%s \n',' ');  
     fprintf(fid,'%s \n','#Surface curvature multiplier');
     fprintf(fid,'%s %f \n','scurvmult =',cm2dopt.surfRcurvM);
@@ -137,8 +137,8 @@ fid = fopen(cm2dopt.options_filepath,'w+');
     fprintf(fid,'%s \n',' ');  
 
     fprintf(fid,'%s \n','#=== Mesh Smoothing Options ==========================');
-    fprintf(fid,'%s \n','#Near surface smoothing type (0 = none | 1 = Laplacian)');
-    fprintf(fid,'%s %d \n','smoothingtype = ',cm2dopt.nsstype);
+    fprintf(fid,'%s \n','#Near surface smoothing type (none | laplacian)');
+    fprintf(fid,'%s %s \n','smoothingtype =',cm2dopt.nsstype);
     fprintf(fid,'%s \n',' '); 
     fprintf(fid,'%s \n','#Vertex selection flooding iterations from surfaces');
     fprintf(fid,'%s %d \n','smoothingnflood = ',cm2dopt.nsvtxflood);
@@ -157,10 +157,10 @@ fid = fopen(cm2dopt.options_filepath,'w+');
     fprintf(fid,'%s \n','#AD tree minimum divisible node size');
     fprintf(fid,'%s %d \n','adtmindivnsize =',cm2dopt.adtree_mindivnsize);
     fprintf(fid,'%s \n',' '); 
-    
-    fprintf(fid,'%s \n','#=== Gradient Interpolation Options ==================');
-    fprintf(fid,'%s \n','#Construct volume to surface gradient interpolation (1 = yes | 0 = no)');
-    fprintf(fid,'%s %d \n','glinkconstruct =',cm2dopt.glink_con);
+        
+    fprintf(fid,'%s \n','#=== Gradient Projection Options =====================');
+    fprintf(fid,'%s \n','#Construct and export volume to surface gradient interpolation (yes | no)');
+    fprintf(fid,'%s %s \n','glinkconstructexp =',cm2dopt.glink_con);
     fprintf(fid,'%s \n',' '); 
     fprintf(fid,'%s \n','#Gradient linking type (rbf or int)');
     fprintf(fid,'%s %s \n','glinktype =',cm2dopt.glinktype);
@@ -184,17 +184,17 @@ fid = fopen(cm2dopt.options_filepath,'w+');
     fprintf(fid,'%s \n',' ');
 
     fprintf(fid,'%s \n','#=== Boundary Condition Options ======================');
-    fprintf(fid,'%s \n','#Set custom boundary conditions in specifed regions (1 = yes | 0 = no)');
-    fprintf(fid,'%s %d \n','setcustombcs = ',cm2dopt.set_custom_bc);
+    fprintf(fid,'%s \n','#Set custom boundary conditions in specifed regions (yes | no)');
+    fprintf(fid,'%s %s \n','setcustombcs =',cm2dopt.set_custom_bc);
     fprintf(fid,'%s \n',' '); 
-    fprintf(fid,'%s \n','#Remove any region of the mesh connected to a far field boundary condition');
-    fprintf(fid,'%s %d \n','remffczones =',cm2dopt.rem_ffzones);
+    fprintf(fid,'%s \n','#Remove any region of the mesh connected to a far field boundary condition (yes | no)');
+    fprintf(fid,'%s %s \n','remffczones =',cm2dopt.rem_ffzones);
     fprintf(fid,'%s \n',' '); 
-    fprintf(fid,'%s \n','#Remove any region of the mesh connected to a non custom set boundary condition');
-    fprintf(fid,'%s %d \n','remncczones =',cm2dopt.rem_nczones);
+    fprintf(fid,'%s \n','#Remove any region of the mesh connected to a non custom set boundary condition (yes | no)');
+    fprintf(fid,'%s %s \n','remncczones =',cm2dopt.rem_nczones);
     fprintf(fid,'%s \n',' '); 
-    fprintf(fid,'%s \n','#Remove any isolated region of the mesh connected only to a wall boundary condition');
-    fprintf(fid,'%s %d \n','remwallonlyzones =',cm2dopt.rem_iszones);
+    fprintf(fid,'%s \n','#Remove any isolated region of the mesh connected only to a wall boundary condition (yes | no)');
+    fprintf(fid,'%s %s \n','remwallonlyzones =',cm2dopt.rem_iszones);
     fprintf(fid,'%s \n',' '); 
 fclose(fid);
 end

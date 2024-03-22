@@ -136,7 +136,7 @@ implicit none
 type(cm2d_options) :: cm2dopt
 
 !Set general options 
-cm2dopt%dispt = 1
+cm2dopt%dispt = .true.
 cm2dopt%meshtype = 'cutcell'
 cm2dopt%meshinout = 'out'
 cm2dopt%surface_dir = 'in'
@@ -154,7 +154,7 @@ cm2dopt%om_offset_x = 0.0d0
 cm2dopt%om_offset_y = 0.0d0 
 
 !Set domain bound options
-cm2dopt%set_mbounds = 0
+cm2dopt%set_mbounds = 'no'
 cm2dopt%mxmin = -10.0d0
 cm2dopt%mxmax = 10.0d0
 cm2dopt%mymin = -10.0d0 
@@ -172,7 +172,7 @@ cm2dopt%elenpad = 0.0d0
 cm2dopt%intcointol = 1e-8
 
 !Set mesh surface options 
-cm2dopt%surface_type = 0
+cm2dopt%surface_type = 'simplified'
 cm2dopt%surfRcurvM = 1.0d0 
 cm2dopt%vtx_sharp_dpval = 0.5d0 
 cm2dopt%NPsinterp = 20 
@@ -196,7 +196,7 @@ cm2dopt%inflayer_lreb = 1.0d0
 cm2dopt%inflayer_stepnacheck = 2
 
 !Set mesh smoothing options 
-cm2dopt%Nsstype = 0
+cm2dopt%Nsstype = 'none'
 cm2dopt%nlpflood = 5
 cm2dopt%nlpsmooth = 10
 
@@ -205,8 +205,8 @@ cm2dopt%ADTpadding = 0.0d0
 cm2dopt%ADTmax_depth = 10 
 cm2dopt%ADTminNodedivsize = 10
 
-!Set gradient linking options 
-cm2dopt%glink_con = 0 
+!Set gradient projection options 
+cm2dopt%glink_con_exp = 'no' 
 cm2dopt%glink_type = 'rbf'
 cm2dopt%glink_nnn = 10
 cm2dopt%glink_nsmooth = 0 
@@ -217,10 +217,10 @@ cm2dopt%RBF_relaxD = 0.05d0
 cm2dopt%RBF_relaxP = 0.5d0 
 
 !Set boundary condition options 
-cm2dopt%set_customBCs = 0 
-cm2dopt%remFFzones = 0 
-cm2dopt%remNCzones = 0 
-cm2dopt%remISzones = 0 
+cm2dopt%set_customBCs = 'no' 
+cm2dopt%remFFzones = 'no'
+cm2dopt%remNCzones = 'no' 
+cm2dopt%remISzones = 'no'
 
 !Set distance field options 
 cm2dopt%dfield_niter = 10000
@@ -250,7 +250,7 @@ end if
 open(11,file=cm2dopt%optpath//cm2dopt%options_filename)
 
 !Set general options 
-call set_int_opt(cm2dopt%dispt,11,'condisp')
+call set_log_opt(cm2dopt%dispt,11,'condisp')
 call set_str_opt(cm2dopt%meshtype,11,'meshtype')
 call set_str_opt(cm2dopt%meshinout,11,'meshinout')
 call set_str_opt(cm2dopt%surface_dir,11,'surfnormdir')
@@ -268,7 +268,7 @@ call set_real_opt(cm2dopt%om_offset_x,11,'offsett_x')
 call set_real_opt(cm2dopt%om_offset_y,11,'offsett_y')
 
 !Set domain bound options
-call set_int_opt(cm2dopt%set_mbounds,11,'forcebounds')
+call set_str_opt(cm2dopt%set_mbounds,11,'forcebounds')
 call set_real_opt(cm2dopt%mxmin,11,'bound_xmin')
 call set_real_opt(cm2dopt%mxmax,11,'bound_xmax')
 call set_real_opt(cm2dopt%mymin,11,'bound_ymin')
@@ -286,7 +286,7 @@ call set_real_opt(cm2dopt%elenpad,11,'eintpad')
 call set_real_opt(cm2dopt%intcointol,11,'intcointol')
 
 !Set mesh surface options 
-call set_int_opt(cm2dopt%surface_type,11,'surftype')
+call set_str_opt(cm2dopt%surface_type,11,'surftype')
 call set_real_opt(cm2dopt%surfRcurvM,11,'scurvmult')
 call set_int_opt(cm2dopt%NPsinterp,11,'scurvnpnt')
 
@@ -309,7 +309,7 @@ call set_int_opt(cm2dopt%inflayer_nbclinesearch,11,'inflayer_nbclinesearch')
 call set_int_opt(cm2dopt%inflayer_stepnacheck,11,'inflayer_stepnacheck')
 
 !Set mesh smoothing options 
-call set_int_opt(cm2dopt%Nsstype,11,'smoothingtype')
+call set_str_opt(cm2dopt%Nsstype,11,'smoothingtype')
 call set_int_opt(cm2dopt%nlpflood,11,'smoothingnflood')
 call set_int_opt(cm2dopt%nlpsmooth,11,'smoothingniter')
 
@@ -318,8 +318,8 @@ call set_real_opt(cm2dopt%ADTpadding,11,'adtpadding')
 call set_int_opt(cm2dopt%ADTmax_depth,11,'adtndimcycle')
 call set_int_opt(cm2dopt%ADTminNodedivsize,11,'adtmindivnsize')
 
-!Set gradient linking options 
-call set_int_opt(cm2dopt%glink_con,11,'glinkconstruct')
+!Set gradient projection options 
+call set_str_opt(cm2dopt%glink_con_exp,11,'glinkconstructexp')
 call set_str_opt(cm2dopt%glink_type,11,'glinktype')
 call set_int_opt(cm2dopt%glink_nnn,11,'glinkrbfnpnt')
 call set_int_opt(cm2dopt%glink_nsmooth,11,'glinknpntsmooth')
@@ -330,10 +330,10 @@ call set_real_opt(cm2dopt%RBF_relaxD,11,'rbfrrelax')
 call set_real_opt(cm2dopt%RBF_relaxP,11,'rbfrelaxp')
 
 !Set boundary condition options 
-call set_int_opt(cm2dopt%set_customBCs,11,'setcustombcs')
-call set_int_opt(cm2dopt%remFFzones,11,'remffczones')
-call set_int_opt(cm2dopt%remNCzones,11,'remncczones')
-call set_int_opt(cm2dopt%remISzones,11,'remwallonlyzones')
+call set_str_opt(cm2dopt%set_customBCs,11,'setcustombcs')
+call set_str_opt(cm2dopt%remFFzones,11,'remffczones')
+call set_str_opt(cm2dopt%remNCzones,11,'remncczones')
+call set_str_opt(cm2dopt%remISzones,11,'remwallonlyzones')
 
 !Set distance field options 
 
@@ -436,7 +436,7 @@ type(vol_mesh_data) :: volume_mesh
 integer(in) :: ii
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> writing mesh to file'
 end if 
 
@@ -467,7 +467,7 @@ close(11)
 ! close(11)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {complete}'
 end if
 return 
@@ -490,7 +490,7 @@ integer(in) :: NBCtype,maxbc,v1,v2
 integer(in), dimension(:), allocatable :: bcactive,nebct
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> writing mesh to file'
 end if 
 
@@ -660,7 +660,7 @@ end do
 close(11)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {complete}'
 end if
 return 
@@ -711,7 +711,7 @@ end do
 close(11)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {complete}'
 end if
 return 
@@ -747,7 +747,7 @@ end do
 close(11)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {complete}'
 end if
 return 
@@ -780,7 +780,7 @@ end do
 close(11)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {complete}'
 end if
 return 
@@ -841,7 +841,7 @@ type(surface_data) :: surface_mesh
 integer(in) :: vv,ii,jj
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> writing volume-surface to surface interpolation structure to file'
 end if 
 
@@ -885,7 +885,7 @@ end do
 close(11)
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '    {complete}'
 end if
 return 

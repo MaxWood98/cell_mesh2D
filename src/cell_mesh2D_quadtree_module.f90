@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.2.2
-!Updated 18-09-2023
+!Version 0.2.3
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_quadtree_mod
@@ -92,7 +92,7 @@ cins = 2 !cell
 vins = 5 !vertex 
 
 !Construct first cell to define global mesh domain
-if (cm2dopt%set_mbounds == 1) then !set custom bounds
+if (cm2dopt%set_mbounds == 'yes') then !set custom bounds
     qt_mesh%vtx(1,1) = cm2dopt%mxmin
     qt_mesh%vtx(1,2) = cm2dopt%mymin 
     qt_mesh%vtx(2,1) = cm2dopt%mxmin
@@ -143,7 +143,7 @@ Nflood_refiter(cm2dopt%Nrefine) = cm2dopt%Nrefine_flood_f
 ncexit = 0 
 nselected = 0 
 node_select(:) = 0 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> refining cells: '
     write(*,'(A)') ' level  |  cells  |  Nflood'
     write(*,'(A)') '----------------------------'
@@ -189,7 +189,7 @@ do rr=1,cm2dopt%Nrefine + cm2dopt%NrefineB
 
     !Exit with no refinement requested
     if (nrefine == 0) then 
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A)')  '   {refinement completed as no cells tagged}'
         end if
         ncexit = 1 
@@ -235,19 +235,19 @@ do rr=1,cm2dopt%Nrefine + cm2dopt%NrefineB
     end do 
 
     !Display
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A,I2,A,I8,A,I4)') '   ',rr,'   ',cins-1,'     ',Nflood
     end if
 
     !Display completion of base refinement 
     if (rr == cm2dopt%Nrefine) then 
-        if (cm2dopt%dispt == 1) then
+        if (cm2dopt%dispt) then
             write(*,'(A)')  '   {base refinement completed}'
         end if
     end if 
 end do 
 if ((rr == cm2dopt%Nrefine + cm2dopt%NrefineB + 1) .AND. (ncexit == 0)) then 
-    if (cm2dopt%dispt == 1) then
+    if (cm2dopt%dispt) then
         write(*,'(A)')  '   {refinement completed at maximum level}'
     end if
 end if 
@@ -725,7 +725,7 @@ do cc=1,qt_mesh%cins-1
 end do
 
 !Display 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> tie-breaking edge co-incident vertices'
 end if
 
@@ -753,13 +753,13 @@ do cc=1,10
 end do 
 
 !Display 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A,I0,A)') '    {perturbed ',NVpertTs,' surface vertices}'
     write(*,'(A,I0,A)') '    {perturbed ',NVpertTm,' mesh vertices}'
 end if
 
 !Display 
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A)') '--> identifying cell states with respect to the surface geometry'
 end if
 
@@ -1057,7 +1057,7 @@ do cc=1,qt_mesh%cins-1
 end do 
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A,I0,A,I0,A)') '    {',Nexternal,' external cells identified after ',Nflooditer,' iterations}'
 end if
 
@@ -1073,7 +1073,7 @@ do cc=1,qt_mesh%cins-1
 end do 
 
 !Display
-if (cm2dopt%dispt == 1) then
+if (cm2dopt%dispt) then
     write(*,'(A,I0,A)') '    {',Ninternal,' internal cells identified}'
 end if
 
