@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 7.1
-!Updated 22-02-2024
+!Version 7.2
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_io_mod
@@ -16,94 +16,114 @@ implicit none
 
 !Variables - Import
 type(cm2d_options) :: cm2dopt
-    
+
 !Variables - Local 
-integer(in) :: nargs
-integer(in32) :: arglen,argstat
+integer(in32) :: ii,jj
+integer(in32) :: nargs,pathpos
+character(len=:), allocatable :: argcurr,pathtemp
+
 
 !Check and process supplied command arguments 
 nargs = command_argument_count()
 if (nargs == 0) then 
-    write(*,'(A)') '** at least one argument must be supplied [mode / surface name / io path / options path]'
+    write(*,'(A)') '** at least one argument [mode] must be supplied,& 
+    & optionaly followed by the paths of input and output items'
+    print *, '** paths: '
+    print *, '-o [options file with path]'
+    print *, '-s [surface file with path]'
     stop
-elseif (nargs == 1) then !Use mode
-
-    !Read mode 
-    call get_command_argument(number=1, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%mode)
-    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
-
-    !Set default paths and surface name 
-    allocate(character(len=3) :: cm2dopt%iopath)
-    cm2dopt%iopath = 'io/'
-    allocate(character(len=3) :: cm2dopt%optpath)
-    cm2dopt%optpath = 'io/'
-    allocate(character(len=23) :: cm2dopt%surfacename)
-    cm2dopt%surfacename = 'cell_mesh2d_surface.dat'
-elseif (nargs == 2) then !Use mode and surface name
-
-    !Read mode 
-    call get_command_argument(number=1, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%mode)
-    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
-
-    !Read surface name 
-    call get_command_argument(number=2, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%surfacename)
-    call get_command_argument(number=2, value=cm2dopt%surfacename, status=argstat)
-
-    !Set default paths
-    allocate(character(len=3) :: cm2dopt%iopath)
-    cm2dopt%iopath = 'io/'
-    allocate(character(len=3) :: cm2dopt%optpath)
-    cm2dopt%optpath = 'io/'
-elseif (nargs == 3) then !Use mode, surface name and io path
-
-    !Read mode 
-    call get_command_argument(number=1, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%mode)
-    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
-
-    !Read surface name 
-    call get_command_argument(number=2, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%surfacename)
-    call get_command_argument(number=2, value=cm2dopt%surfacename, status=argstat)
-
-    !Read io path
-    call get_command_argument(number=3, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%iopath)
-    call get_command_argument(number=3, value=cm2dopt%iopath, status=argstat)
-
-    !Set default options path
-    allocate(character(len=3) :: cm2dopt%optpath)
-    cm2dopt%optpath = 'io/'
-elseif (nargs == 4) then !Use mode, surface name, io path and options path
-
-    !Read mode 
-    call get_command_argument(number=1, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%mode)
-    call get_command_argument(number=1, value=cm2dopt%mode, status=argstat)
-
-    !Read surface name 
-    call get_command_argument(number=2, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%surfacename)
-    call get_command_argument(number=2, value=cm2dopt%surfacename, status=argstat)
-
-    !Read io path
-    call get_command_argument(number=3, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%iopath)
-    call get_command_argument(number=3, value=cm2dopt%iopath, status=argstat)
-
-    !Read options path
-    call get_command_argument(number=4, length=arglen)
-    allocate(character(len=arglen) :: cm2dopt%optpath)
-    call get_command_argument(number=4, value=cm2dopt%optpath, status=argstat)
 else
-    write(*,'(A)') '** too many command arguments supplied'
-    stop
+
+    !Get operation mode 
+    cm2dopt%mode = get_command_argument_n_str(1)
+
+    !Error if incorrect mode specified 
+    if (cm2dopt%mode == 'check') then 
+        !do nothing
+    elseif (cm2dopt%mode == 'mesh') then 
+        !do nothing
+    elseif (cm2dopt%mode == 'project') then 
+        !do nothing
+    else
+        write(*,'(A,A)') '** unknown mode option requested : ',cm2dopt%mode
+        stop
+    end if 
+
+     !Scan for additional arguments 
+    do ii=2,nargs-1
+
+        !Current argument 
+        argcurr = get_command_argument_n_str(ii)
+
+        !If option tag
+        if (argcurr == '-o') then !next is options filename with path 
+
+            !Read options filepath and extract optpath
+            cm2dopt%optpath = get_command_argument_n_str(ii+1)
+            pathpos = 0 
+            do jj=len_trim(cm2dopt%optpath),1,-1
+                if ((cm2dopt%optpath(jj:jj) == '/') .OR. (cm2dopt%optpath(jj:jj) == '\')) then 
+                    pathpos = jj 
+                    exit 
+                end if 
+            end do 
+            if (pathpos .NE. 0) then !path
+                pathtemp = cm2dopt%optpath
+                cm2dopt%options_filename = pathtemp(pathpos+1:len_trim(pathtemp))
+                cm2dopt%optpath = pathtemp(1:pathpos)
+            else !no path 
+                cm2dopt%options_filename = cm2dopt%optpath
+                cm2dopt%optpath = ''
+            end if 
+            ! print *, pathpos
+            ! print *, cm2dopt%optpath
+            ! print *, cm2dopt%options_filename
+        elseif (argcurr == '-s') then !next is surface filename with path
+
+            !Read surface filepath and extract iopath 
+            cm2dopt%iopath = get_command_argument_n_str(ii+1)
+            pathpos = 0 
+            do jj=len_trim(cm2dopt%iopath),1,-1
+                if ((cm2dopt%iopath(jj:jj) == '/') .OR. (cm2dopt%iopath(jj:jj) == '\')) then 
+                    pathpos = jj 
+                    exit 
+                end if 
+            end do 
+            if (pathpos .NE. 0) then !path
+                pathtemp = cm2dopt%iopath
+                cm2dopt%surface_filename = pathtemp(pathpos+1:len_trim(pathtemp))
+                cm2dopt%iopath = pathtemp(1:pathpos)
+            else !no path 
+                cm2dopt%surface_filename = cm2dopt%iopath
+                cm2dopt%iopath = ''
+            end if 
+            ! print *, pathpos
+            ! print *, cm2dopt%iopath
+            ! print *, cm2dopt%surface_filename
+        end if 
+    end do 
 end if 
 return 
 end subroutine get_process_arguments
+
+
+
+
+!Set default paths subroutine ===========================
+subroutine set_default_paths(cm2dopt)
+implicit none 
+
+!Variables - Import
+type(cm2d_options) :: cm2dopt
+
+!Set paths
+cm2dopt%iopath = ''
+cm2dopt%optpath = ''
+cm2dopt%surface_filename = 'cell_mesh2d_surface'
+cm2dopt%options_filename = 'cell_mesh2d_options'
+cm2dopt%bcondzone_filename = 'cell_mesh2d_bcond_zones'
+return 
+end subroutine set_default_paths
 
 
 
@@ -168,7 +188,7 @@ cm2dopt%inflayer_dvw = 0.1d0
 cm2dopt%inflayer_cvxdp = 0.05d0
 cm2dopt%inflayer_ew = 0.1d0 
 cm2dopt%inflayer_ebcbase = 0.1d0 
-cm2dopt%inflayer_enormw = 0.25d0 
+cm2dopt%inflayer_enormw = 0.5d0 
 cm2dopt%inflayer_enflood = 50
 cm2dopt%inflayer_ensubiter = 10
 cm2dopt%inflayer_cvxep = 1.0d0 
@@ -220,8 +240,14 @@ implicit none
 !Variables - Import
 type(cm2d_options) :: cm2dopt
 
+!Check if file exists
+if (.NOT.file_exists(cm2dopt%optpath//cm2dopt%options_filename)) then 
+    write(*,'(A)') '    ** cannot locate options file: '//cm2dopt%optpath//cm2dopt%options_filename
+    stop
+end if 
+
 !Open file
-open(11,file=cm2dopt%optpath//'cell_mesh2d_options.dat')
+open(11,file=cm2dopt%optpath//cm2dopt%options_filename)
 
 !Set general options 
 call set_int_opt(cm2dopt%dispt,11,'condisp')
@@ -331,8 +357,14 @@ type(cm2d_options) :: cm2dopt
 !Variables - Local
 integer(in) :: ii
 
+!Check if file exists
+if (.NOT.file_exists(cm2dopt%iopath//cm2dopt%surface_filename)) then 
+    write(*,'(A)') '    ** cannot locate surface file: '//cm2dopt%iopath//cm2dopt%surface_filename
+    stop
+end if 
+
 !Open file 
-open(11,file=cm2dopt%iopath//cm2dopt%surfacename)
+open(11,file=cm2dopt%iopath//cm2dopt%surface_filename)
 
 !Import item quantities
 read(11,*) surface_mesh%nvtx,surface_mesh%nfcs
@@ -371,8 +403,14 @@ type(cm2d_options) :: cm2dopt
 !Variables - Local
 integer(in) :: ii
 
+!Check if file exists
+if (.NOT.file_exists(cm2dopt%optpath//cm2dopt%bcondzone_filename)) then 
+    write(*,'(A)') '    ** cannot locate boundary contition file: '//cm2dopt%optpath//cm2dopt%bcondzone_filename
+    stop
+end if 
+
 !Read file
-open(11,file=cm2dopt%optpath//'cell_mesh2d_bcond_zones.dat')
+open(11,file=cm2dopt%optpath//cm2dopt%bcondzone_filename)
     read(11,*) cm2dopt%Nzone_cBC
     allocate(cm2dopt%BC_zone_bc(cm2dopt%Nzone_cBC))
     allocate(cm2dopt%BC_zone_coords(cm2dopt%Nzone_cBC,4))

@@ -2,14 +2,14 @@
 %Max Wood - mw16116@bristol.ac.uk
 %Univeristy of Bristol - Department of Aerospace Engineering
 
-%Version 1.1
-%Updated 30-11-2021
+%Version 1.2
+%Updated 22-03-2024
 
 %Function -----------------------------------------------------------------
-function [Ncell,Nedge,Nvtx,edge,vtx,cell_lr] = import_mesh_cm2d(filepath)
+function [Ncell,Nedge,Nvtx,edge,vtx,cell_lr] = import_mesh_cm2d(filename)
 
     %Load mesh
-    fid = fopen(filepath);
+    fid = fopen(filename);
     mesh = textscan(fid,'%f %f %f %f');
     fclose(fid);
     

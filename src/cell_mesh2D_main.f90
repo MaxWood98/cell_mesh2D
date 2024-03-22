@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 4.1
-!Updated 20-02-2024
+!Version 4.2
+!Updated 22-03-2024
 
 !Main
 program cell_mesh2d
@@ -18,6 +18,9 @@ type(cm2d_options) :: cm2dopt
 type(surface_data) :: surface_mesh
 type(vol_mesh_data) :: volume_mesh
 real(dp), dimension(:,:), allocatable :: gradient_vol,gradient_surf
+
+!Set default paths 
+call set_default_paths(cm2dopt)
 
 !Set option defaults 
 call set_default_options(cm2dopt)
@@ -34,7 +37,7 @@ if (cm2dopt%dispt == 1) then
     write(*,'(A)')'+--------------------------------------------+'
     write(*,'(A)')'|              Cell Mesh 2D (v2)             |'
     write(*,'(A)')'|         2D Cut-Cell Mesh Generator         |'
-    write(*,'(A)')'|        Version 0.9.4 || 22/02/2024         |'
+    write(*,'(A)')'|        Version 0.9.6 || 22/03/2024         |'
     write(*,'(A)')'|                 Max Wood                   |'
     write(*,'(A)')'|           University of Bristol            |'
     write(*,'(A)')'|    Department of Aerospace Engineering     |'

@@ -2,7 +2,7 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.4
+!Version 0.5
 !Updated 23-02-2024
 
 !Module
@@ -650,6 +650,25 @@ do ilayer=1,Nlayer
     end if 
 end do
 
+!Update the actual volume mesh structure to include the inflation layer
+volume_mesh%nvtx = Nvertex_new
+deallocate(volume_mesh%vertices)
+allocate(volume_mesh%vertices(volume_mesh%nvtx,2))
+volume_mesh%vertices(:,:) = vertices_new(1:Nvertex_new,:)
+volume_mesh%nedge = Nedge_new
+deallocate(volume_mesh%edge)
+allocate(volume_mesh%edge(volume_mesh%nedge,4))
+volume_mesh%edge(:,:) = edge_new(1:Nedge_new,:)
+cell_level_temp(:) = volume_mesh%cell_level(:)
+deallocate(volume_mesh%cell_level)
+allocate(volume_mesh%cell_level(Ncell_new))
+volume_mesh%cell_level(1:volume_mesh%ncell) = cell_level_temp(:) 
+volume_mesh%cell_level(volume_mesh%ncell:Ncell_new) = maxval(volume_mesh%cell_level(1:volume_mesh%ncell))
+volume_mesh%ncell = Ncell_new
+
+!Reset the surface mesh vertices 
+surface_mesh%vertices = surface_mesh%vertices0
+
 !Update surface link structure 
 deallocate(volume_mesh%vtx_surfseg)
 allocate(volume_mesh%vtx_surfseg(Nvertex_new))
@@ -671,23 +690,7 @@ do vv=1,Nvertex_new
 end do 
 call build_surface_links(volume_mesh,surface_mesh)
 
-!Update the actual volume mesh structure to include the inflation layer
-volume_mesh%nvtx = Nvertex_new
-deallocate(volume_mesh%vertices)
-allocate(volume_mesh%vertices(volume_mesh%nvtx,2))
-volume_mesh%vertices(:,:) = vertices_new(1:Nvertex_new,:)
-volume_mesh%nedge = Nedge_new
-deallocate(volume_mesh%edge)
-allocate(volume_mesh%edge(volume_mesh%nedge,4))
-volume_mesh%edge(:,:) = edge_new(1:Nedge_new,:)
-cell_level_temp(:) = volume_mesh%cell_level(:)
-deallocate(volume_mesh%cell_level)
-allocate(volume_mesh%cell_level(Ncell_new))
-volume_mesh%cell_level(1:volume_mesh%ncell) = cell_level_temp(:) 
-volume_mesh%cell_level(volume_mesh%ncell:Ncell_new) = maxval(volume_mesh%cell_level(1:volume_mesh%ncell))
-volume_mesh%ncell = Ncell_new
-
-!Clean mesh shoert edges
+!Clean mesh short edges
 call clean_mesh_shortE(volume_mesh,cm2dopt,cm2dopt%EminLength) 
 call clean_mesh_shortE(volume_mesh,cm2dopt,cm2dopt%EminLength,-1_in)
 
@@ -937,7 +940,7 @@ do ii=1,Nsurfvtx
 
     !Linked surface index
     lidx = volume_mesh%surf_linkindex(vtgt)
-
+    
     !Surface segment and fraction
     sidx = volume_mesh%surf_vtx_seg(lidx)
     sfrac = volume_mesh%surf_vtx_segfrac(lidx)

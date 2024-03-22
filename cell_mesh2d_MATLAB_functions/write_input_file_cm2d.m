@@ -2,13 +2,13 @@
 %Max Wood - mw16116@bristol.ac.uk
 %Univeristy of Bristol - Department of Aerospace Engineering
 
-%Version 6.3
-%Updated 22-02-2024
+%Version 6.4
+%Updated 22-03-2024
 
 %Function -----------------------------------------------------------------
 function [] = write_input_file_cm2d(cm2dopt)
-fid = fopen('io\cell_mesh2d_options.dat','w+');
-    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.9.4)');
+fid = fopen(cm2dopt.options_filepath,'w+');
+    fprintf(fid,'%s \n','#cell_mesh2d options file (version 0.9.5)');
     fprintf(fid,'%s \n',' ');
     
     fprintf(fid,'%s \n','#=== General Options =================================');
@@ -76,10 +76,10 @@ fid = fopen('io\cell_mesh2d_options.dat','w+');
     fprintf(fid,'%s %E \n','srfeminlength =',cm2dopt.srfeminlen);
     fprintf(fid,'%s \n',' ');
     fprintf(fid,'%s \n','#Volume fraction of an undeformed cell at each refinement level below which a cell is classed as a sliver cell');
-    fprintf(fid,'%s %s \n','srfinclean =',cm2dopt.srfinclean);
+    fprintf(fid,'%s %s \n','cminvol =',cm2dopt.cminvol);
     fprintf(fid,'%s \n',' '); 
     fprintf(fid,'%s \n','#Allow cleaning of the input surface geometry ');
-    fprintf(fid,'%s %s \n','cminvol =',cm2dopt.cminvol);
+    fprintf(fid,'%s %s \n','srfinclean =',cm2dopt.srfinclean);
     fprintf(fid,'%s \n',' '); 
 
     fprintf(fid,'%s \n','#=== Mesh Geometry Intersection Options ==============');

@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 0.8
-!Updated 20-02-2024
+!Version 1.0
+!Updated 22-03-2024
 
 !Module
 module cellmesh2d_data_mod
@@ -34,7 +34,8 @@ end type cell_data
 
 !Options data type
 type cm2d_options
-    character(len=:), allocatable :: mode,iopath,optpath,surfacename,surface_dir,boundary_dir,meshinout,meshtype
+    character(len=:), allocatable :: mode,iopath,optpath,surface_filename,options_filename,bcondzone_filename
+    character(len=:), allocatable :: surface_dir,boundary_dir,meshinout,meshtype
     character(len=:), allocatable :: glink_type,build_inflayer,srfinclean
     integer(in) :: Nrefine,NrefineB,Ncell_max,Nrefine_flood_i,Nrefine_flood_f,Nrefine_flood_b,inflayer_nlayer
     integer(in) :: inflayer_nintstep_max,inflayer_nbclinesearch,dfield_niter,inflayer_enflood,inflayer_ensubiter

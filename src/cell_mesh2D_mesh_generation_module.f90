@@ -264,7 +264,7 @@ elseif (cm2dopt%meshtype == 'su2_dual') then
     call remap_cell_indecies(volume_mesh)
 end if 
 
-!Build surface vertex mappings 
+!Construct surface links 
 call build_surface_links(volume_mesh,surface_mesh)
 
 !Apply near surface mesh smoothing 

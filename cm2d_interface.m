@@ -15,6 +15,11 @@ clc
 
 %% Input
 
+%Filepaths
+cm2dopt.options_filepath = 'cell_mesh2d_options';            %Options filepath
+cm2dopt.surface_filepath = 'io/cell_mesh2d_surface.dat';     %Surface filepath
+cm2dopt.bcondzone_filename = 'cell_mesh2d_bcond_zones';      %Boundary conditions filepath
+
 %General options 
 cm2dopt.condisp = 1;               %Toggle console display (1 = yes || 0 = no)
 
@@ -29,10 +34,10 @@ cm2dopt.boundary_dir = 'in';       %Boundary normal direction switch in to / out
 cm2dopt.nrefine = 12;              %Maximum refinement level 
 cm2dopt.nrefineB = 0;              %Maximum additional refinement levels in high curvature regions
 cm2dopt.ncell_max = 200000;        %Maximum number of cells
-cm2dopt.nrflood_i = 12;            %Refinement adjacency flooding iterations at the first refinement
-cm2dopt.nrflood_f = 8;             %Refinement adjacency flooding iterations at the final refinement
-cm2dopt.nrflood_b = 5;             %Refinement adjacency flooding iterations on boosted refinement
-cm2dopt.fbound = 15;               %Far field distance from object centre  
+cm2dopt.nrflood_i = 7;             %Refinement adjacency flooding iterations at the first refinement
+cm2dopt.nrflood_f = 7;             %Refinement adjacency flooding iterations at the final refinement
+cm2dopt.nrflood_b = 2;             %Refinement adjacency flooding iterations on boosted refinement
+cm2dopt.fbound = 20;               %Far field distance from object centre  
 cm2dopt.coffset = [0.0 0.0];       %Object/mesh centre offset (x / y)
 
 %Custom domain bound specification 
@@ -44,7 +49,7 @@ cm2dopt.ymax = 11.8;               %ymin
 
 %Mesh cleaning options
 cm2dopt.eminlen = 1e-8;            %Minimum edge length as a fraction of an undeformed cell edge length at each refienemnt level 
-cm2dopt.srfeminlen = 0.25;         %Minimum surface edge length as a fraction of an undeformed cell edge length at each refienemnt level 
+cm2dopt.srfeminlen = 0.005;        %Minimum surface edge length as a fraction of an undeformed cell edge length at each refienemnt level 
 cm2dopt.cminvol = 0.1;             %Volume fraction of an undeformed cell at each refinement level below which a cell is classed as a sliver cell
 cm2dopt.srfinclean = 'no';         %Allow cleaning of the input surface geometry 
 
@@ -59,14 +64,14 @@ cm2dopt.surfRcurvM = 1.0;          %Surface curvature multiplier
 cm2dopt.surfRcurvNpts = 10;        %Number of vertices used to estimate local surface curvature
 
 %Inflation layer options 
-cm2dopt.build_inflayer = 'yes';    %Toggle construction of an inflation layer (yes | no)
-cm2dopt.inflayer_height = 0.05;    %Inflation layer approximate height
+cm2dopt.build_inflayer = 'no';    %Toggle construction of an inflation layer (yes | no)
+cm2dopt.inflayer_height = 0.04;    %Inflation layer approximate height
 cm2dopt.inflayer_nlayer = 0;       %Number of layers within the inflation layer (determine automatically if zero)
-cm2dopt.inflayer_wd = 0.2;         %Inflation layer differencing weight (0->1)
-cm2dopt.inflayer_cvxdp = 0.2;      %Inflation layer convex differencing penalty (0->1)
-cm2dopt.inflayer_we = 0.2;         %Inflation layer evening weight (0->1)
+cm2dopt.inflayer_wd = 0.1;         %Inflation layer differencing weight (0->1)
+cm2dopt.inflayer_cvxdp = 0.1;      %Inflation layer convex differencing penalty (0->1)
+cm2dopt.inflayer_we = 0.5;         %Inflation layer evening weight (0->1)
 cm2dopt.inflayer_ebcbase = 0.1;    %Inflation layer concave evening bias base value
-cm2dopt.inflayer_enflood = 20;     %Inflation layer evening number of flood iterations
+cm2dopt.inflayer_enflood = 10;     %Inflation layer evening number of flood iterations
 cm2dopt.inflayer_ensubiter = 10;   %Inflation layer evening number of sub-iterations
 cm2dopt.inflayer_lreb = 1.0;       %Inflation layer evening length ratio bound (>=1)
 
@@ -82,14 +87,14 @@ cm2dopt.adtree_mindivnsize = 10;   %AD tree minimum divisible node size
 
 %Gradient linking options
 cm2dopt.glink_con = 0;             %Construct volume to surface gradient interpolation (1 = yes | 0 = no)
-cm2dopt.glinktype = 'rbf';         %Gradient linking type (rbf or int)
-cm2dopt.glink_nnn = 10;            %Number of nearest neighbours to use for RBF volume to surface gradient interpolation
+cm2dopt.glinktype = 'int';         %Gradient linking type (rbf or int)
+cm2dopt.glink_nnn = 80;            %Number of nearest neighbours to use for RBF volume to surface gradient interpolation
 cm2dopt.glink_nsmooth = 0;         %Number of vertices each side used to smooth the gradient at each surface vertex
 
 %Radial Basis function Options 
 cm2dopt.RBF_rsup = 50.0;           %RBF interpolation support radius as a multiple of the maximum distance between points
-cm2dopt.RBF_relaxD = 0.05;         %RBF interpolation relaxation distance as fraction of the maximum distance between points
-cm2dopt.RBF_relaxP = 0.5;          %RBF interpolation relaxation parameter
+cm2dopt.RBF_relaxD = 0.01;         %RBF interpolation relaxation distance as fraction of the maximum distance between points
+cm2dopt.RBF_relaxP = 0.01;         %RBF interpolation relaxation parameter
 
 %Boundary condition options ===============================================
 %Boundary condition options 
@@ -99,8 +104,11 @@ cm2dopt.rem_nczones = 0;           %Remove any region of the mesh connected to a
 cm2dopt.rem_iszones = 0;           %Remove any isolated region of the mesh connected only to a wall boundary condition 
 
 %Boundary condition zone bounds [xmin xmax ymin ymax]
-BC_zones_loc = [-1.0 1.0 0.5 3.5;
-                5.5 8.5 11.5 12.5];
+% BC_zones_loc = [-1.0 1.0 0.5 3.5;
+%                 5.5 8.5 11.5 12.5];
+
+% BC_zones_loc = [-1.0 1.0 0.5 7.5;
+%                 5.5 8.5 -1.0 9.0];
 
 %Boundary condition zone conditions
 % -1 = wall
@@ -110,7 +118,7 @@ BC_zones_loc = [-1.0 1.0 0.5 3.5;
 % -5 = stagnation state inflow
 % -6 = freestream inflow
 % -7 = back pressure outflow 
-BC_zones_type = [-5 ; -6];
+BC_zones_type = [-6 ; -7];
 
 
 
@@ -123,8 +131,8 @@ if cm2dopt.set_custom_bc == 1
 end 
 
 %Call meshing function 
-system('cell_mesh2d mesh');
-% system('cell_mesh2d project');
+cell_mesh2d_run('mesh',cm2dopt.options_filepath,cm2dopt.surface_filepath);
+% cell_mesh2d_run('project',cm2dopt.options_filepath,cm2dopt.surface_filepath);
 
 %% Load mesh
 
@@ -204,24 +212,38 @@ patch('vertices',vertices,'faces',connectivity,'EdgeAlpha',0.5,'Marker','.','Edg
 % plot(vertices(vtgt,1),vertices(vtgt,2),'g*');
 
 
-% %Plot boundary conditions 
-% for ii=1:Nedge
-%     if cell_lr(ii,1) == -1 %wall
-%         % patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
-%     elseif cell_lr(ii,1) == -2 %far field
-%         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','b');
-%     elseif cell_lr(ii,1) == -3 || cell_lr(ii,1) == -5 || cell_lr(ii,1) == -6 %inflow
-%         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','g');
-%     elseif cell_lr(ii,1) == -4 || cell_lr(ii,1) == -7 %outflow
-%         patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','r');
-%     end
-% end
+%Plot boundary conditions 
+for ii=1:Nedge
+    if cell_lr(ii,1) == -1 %wall
+        % patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','c');
+    elseif cell_lr(ii,1) == -2 %far field
+        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','b');
+    elseif cell_lr(ii,1) == -3 || cell_lr(ii,1) == -5 || cell_lr(ii,1) == -6 %inflow
+        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','g');
+    elseif cell_lr(ii,1) == -4 || cell_lr(ii,1) == -7 %outflow
+        patch('vertices',vtx,'faces',edge(ii,:),'EdgeAlpha',1.0,'Marker','none','Edgecolor','r');
+    end
+end
 
 % %Plot surface and volume gradients 
-% grad_surf = load('io/gradient_surf.dat');
-% quiver(vertices(:,1),vertices(:,2),grad_surf(:,1),grad_surf(:,2),0,'r','maxheadsize',0.01)
+% % grad_surf = load('io/gradient_surf.dat');
+% % quiver(vertices(:,1),vertices(:,2),grad_surf(:,1),grad_surf(:,2),0,'r','maxheadsize',0.01)
 % grad_vol = load('io/gradient.dat');
-% quiver(vtx(:,1),vtx(:,2),grad_vol(:,1),grad_vol(:,2),0,'b','maxheadsize',0.01)
+% grad_valid = zeros(length(grad_vol(:,1)),1);
+% for ii=1:Nedge
+%     if cell_lr(ii,1) == -1 %wall
+%         grad_valid(edge(ii,:)) = 1;
+%     end
+% end
+% for ii=1:length(grad_vol(:,1))
+%     if grad_valid(ii) == 0
+%         grad_vol(ii,:) = 0;
+%     end
+% end
+% quiver(vtx(:,1),vtx(:,2),grad_vol(:,1),grad_vol(:,2),0.5,'b','maxheadsize',0.01)
+
+
+
 
 % %Plot cell
 % % ctgt = 4475;
@@ -341,7 +363,7 @@ xlabel('x')
 ylabel('y')
 hold off
 
-axis([-0.15    1.15   -0.5    0.5]);
+% axis([-0.15    1.15   -0.5    0.5]);
 
 % axis([-0.1699    1.1425   -0.6533    0.6591]);
 
@@ -377,11 +399,7 @@ axis([-0.15    1.15   -0.5    0.5]);
 % axis([0.8671    1.1031   -0.1265    0.1096]);
 
 
-
-
-
-
-
+% axis([-0.0625    0.3516   -0.1613    0.1573]);
 
 
 

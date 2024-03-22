@@ -2,8 +2,8 @@
 !Max Wood - mw16116@bristol.ac.uk 
 !Univeristy of Bristol - Department of Aerospace Engineering
 
-!Version 1.2
-!Updated 12-02-2024
+!Version 2.1
+!Updated 20-03-2024
 
 !Module 
 module io_utilities
@@ -38,13 +38,11 @@ integer(in) :: argint
 integer(in32) :: arg_idx
 
 !Variables - Local 
-integer(in32) :: arglen,argstat
+! integer(in32) :: arglen,argstat
 character(len=:), allocatable :: argtemp
 
 !Read argument 
-call get_command_argument(number=arg_idx, length=arglen)
-allocate(character(len=arglen) :: argtemp)
-call get_command_argument(number=arg_idx, value=argtemp, status=argstat)
+argtemp = get_command_argument_n_str(arg_idx)
 
 !Convert to integer
 argint = str2int(argtemp)
@@ -63,18 +61,39 @@ real(dp) :: argreal
 integer(in32) :: arg_idx
 
 !Variables - Local 
-integer(in32) :: arglen,argstat
+! integer(in32) :: arglen,argstat
 character(len=:), allocatable :: argtemp
 
 !Read argument 
-call get_command_argument(number=arg_idx, length=arglen)
-allocate(character(len=arglen) :: argtemp)
-call get_command_argument(number=arg_idx, value=argtemp, status=argstat)
+argtemp = get_command_argument_n_str(arg_idx)
 
 !Convert to integer
 argreal = str2real(argtemp)
 return 
 end function get_command_argument_n_real
+
+
+
+
+!Function to get string command argument =========================
+function get_command_argument_n_str(arg_idx) result(argstr)
+implicit none 
+
+!Result 
+character(len=:), allocatable :: argstr
+
+!Variables - Import 
+integer(in32) :: arg_idx
+
+!Variables - Local 
+integer(in32) :: arglen,argstat
+
+!Read argument 
+call get_command_argument(number=arg_idx, length=arglen)
+allocate(character(len=arglen) :: argstr)
+call get_command_argument(number=arg_idx, value=argstr, status=argstat)
+return 
+end function get_command_argument_n_str
 
 
 
@@ -154,6 +173,161 @@ if (opt_str_read .NE. 'na') then
 end if 
 return 
 end subroutine set_str_opt
+
+
+
+
+!Set logical option subroutine =========================
+subroutine set_log_opt(opt_log,fh,str_tag)
+implicit none
+
+!Variables - Import
+integer(in32) :: fh
+logical :: opt_log
+character(*), intent(in) :: str_tag
+
+!Variables - Local
+character(len=:), allocatable :: opt_str
+
+!Scan for option string 
+opt_str = scan_opt_str(fh,str_tag)
+
+!Set logical option 
+if (opt_str .NE. 'na') then
+    if (opt_str == 'yes') then 
+        opt_log = .true.
+    else 
+        opt_log = .false.
+    end if 
+end if 
+return 
+end subroutine set_log_opt
+
+
+
+
+!Set integer array option subroutine =========================
+subroutine set_int_opt_arr1(opt_int,fh,str_tag)
+implicit none
+
+!Variables - Import
+integer(in32) :: fh
+integer(in), dimension(:), allocatable :: opt_int
+character(*), intent(in) :: str_tag
+
+!Variables - Local
+integer(in) :: ii,jj
+integer(in) :: arrlen,rs,re
+character(len=:), allocatable :: opt_str_read
+
+!Scan for option real
+opt_str_read = scan_opt_str(fh,str_tag) 
+
+!If item has been found and read then set this value else leave option as the default
+if (opt_str_read .NE. 'na') then 
+
+    !Determine length 
+    arrlen = 0 
+    do ii=1,len_trim(opt_str_read) !count number of white spaces
+        if (opt_str_read(ii:ii) == ' ') then 
+            arrlen = arrlen + 1
+        end if 
+    end do 
+    arrlen = arrlen + 1 !set to number of items seperated by white spaces
+
+    !Allocate option array 
+    if (allocated(opt_int)) then 
+        deallocate(opt_int)
+    end if 
+    allocate(opt_int(arrlen))
+    
+    !Write items to the array 
+    rs = 1
+    do ii=1,arrlen
+
+        !Find next white space or end 
+        re = 0
+        do jj=rs+1,len_trim(opt_str_read)
+            if (opt_str_read(jj:jj) == ' ') then 
+                re = jj 
+                exit 
+            elseif (jj == len_trim(opt_str_read)) then 
+                re = jj 
+            end if 
+        end do 
+        
+        !Write current item into the option array 
+        opt_int(ii) = str2int(opt_str_read(rs:re))
+
+        !Update current starting position 
+        rs = re 
+    end do 
+end if 
+return 
+end subroutine set_int_opt_arr1
+
+
+
+
+!Set real array option subroutine =========================
+subroutine set_real_opt_arr1(opt_real,fh,str_tag)
+implicit none
+
+!Variables - Import
+integer(in32) :: fh
+real(dp), dimension(:), allocatable :: opt_real
+character(*), intent(in) :: str_tag
+
+!Variables - Local
+integer(in) :: ii,jj
+integer(in) :: arrlen,rs,re
+character(len=:), allocatable :: opt_str_read
+
+!Scan for option real
+opt_str_read = scan_opt_str(fh,str_tag) 
+
+!If item has been found and read then set this value else leave option as the default
+if (opt_str_read .NE. 'na') then 
+
+    !Determine length 
+    arrlen = 0 
+    do ii=1,len_trim(opt_str_read) !count number of white spaces
+        if (opt_str_read(ii:ii) == ' ') then 
+            arrlen = arrlen + 1
+        end if 
+    end do 
+    arrlen = arrlen + 1 !set to number of items seperated by white spaces
+
+    !Allocate option array 
+    if (allocated(opt_real)) then 
+        deallocate(opt_real)
+    end if 
+    allocate(opt_real(arrlen))
+    
+    !Write items to the array 
+    rs = 1
+    do ii=1,arrlen
+
+        !Find next white space or end 
+        re = 0
+        do jj=rs+1,len_trim(opt_str_read)
+            if (opt_str_read(jj:jj) == ' ') then 
+                re = jj 
+                exit 
+            elseif (jj == len_trim(opt_str_read)) then 
+                re = jj 
+            end if 
+        end do 
+        
+        !Write current item into the option array 
+        opt_real(ii) = str2real(opt_str_read(rs:re))
+
+        !Update current starting position 
+        rs = re 
+    end do 
+end if 
+return 
+end subroutine set_real_opt_arr1
 
 
 
@@ -254,9 +428,8 @@ do while (iostatus == 0)
                 exit 
             end if 
         end do 
-        if (read_init_pos == -1) then !input is the wring format and the '= ' tag has not been found 
-            write(*,'(A)') '** could not locate "= " in the option input following tag "'//str_tag//'",&
-            & it must be of incorrect format' 
+        if (read_init_pos == -1) then !input is the wrong format and the '= ' tag has not been found 
+            write(*,'(A)') '** could not locate "= ", the option input following tag "'//str_tag//'" is of incorrect format' 
             opt_str = 'na'
             return 
         end if 
